@@ -1,0 +1,12 @@
+[package]
+name = "bspts"
+description = "Skyler's Bullshit Point Tracking System"
+version = "0.1.0"
+authors = ["Skyler Olson <skyler.olson.rl@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+yew = "0.17"
+wasm-bindgen = "0.2"
