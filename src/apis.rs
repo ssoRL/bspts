@@ -2,42 +2,25 @@ use yew::services::storage::{StorageService,Area};
 use yew::services::console::{ConsoleService};
 use crate::types::{Task};
 
-pub fn get_tasks() -> Vec<Task> {
+pub fn get_tasks() -> Result<Vec<Task>, ()> {
     // TODO: More safe way to handle than unwrap??
     let storage_service = StorageService::new(Area::Local).unwrap();
     let from_storage = StorageService::restore(&storage_service, "bspts_tasks");
-
-    let default_tasks = vec![
-        Task {
-            id: 1,
-            name: "Music".to_string(),
-            description: "".to_string(),
-            checked: false,
-            daily_loss: 4
-        },
-        Task {
-            id: 2,
-            name: "Reading".to_string(),
-            description: "At least one chapter of physical media".to_string(),
-            checked: false,
-            daily_loss: 8
-        }
-    ];
 
     let tasks = match from_storage {
         Ok(serialized_tasks) => {
             let deserialize_result: Result<Vec<Task>, _> = serde_json::from_str(&serialized_tasks);
             return match deserialize_result {
-                Ok(tasks) => tasks,
+                Ok(tasks) => Ok(tasks),
                 _ => {
                     ConsoleService::info("Failed to deserialize");
-                    default_tasks
+                    Err(())
                 }
             }
         },
         _ => {
             ConsoleService::info("Failed to get from memory");
-            default_tasks
+            Err(())
         }
     };
 

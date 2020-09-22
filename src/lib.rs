@@ -1,6 +1,7 @@
 mod pages;
 mod types;
 mod apis;
+mod components;
 
 use pages::Home;
 use wasm_bindgen::prelude::*;

@@ -1,9 +1,12 @@
 use yew::prelude::*;
 use crate::types::{Task};
 use crate::apis::{get_tasks, set_tasks};
+use crate::components::{TaskComponent, TaskCreator};
+use yew::services::console::{ConsoleService};
 
 struct State {
-    tasks_option: Option<Vec<Task>>
+    tasks: Vec<Task>,
+    show_create_task: bool
 }
 
 pub struct Home {
@@ -12,8 +15,10 @@ pub struct Home {
 }
 
 pub enum Msg {
-    GetTasks,
-    SaveTasks
+    SaveTasks,
+    CreateNewTask,
+    CommitNewTask(Task),
+    CancelCreateTask,
 }
 
 impl Component for Home {
@@ -21,11 +26,18 @@ impl Component for Home {
     type Properties = ();
 
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
-        link.send_message(Msg::GetTasks);
+        ConsoleService::info("Getting tasks");
+        let tasks_result = get_tasks();
+        // TODO: error handling
+        let tasks = match tasks_result {
+            Ok(tasks) => tasks,
+            Err(_) => vec![]
+        };
 
         Self {
             state: State {
-                tasks_option: None
+                tasks: tasks,
+                show_create_task: false,
             },
             link
         }
@@ -33,19 +45,23 @@ impl Component for Home {
 
     fn update(&mut self, message: Self::Message) -> ShouldRender {
         match message {
-            Msg::GetTasks => {
-                let tasks = get_tasks();
-                self.state.tasks_option = Some(tasks);
+            Msg::SaveTasks => {
+                ConsoleService::info("Saving tasks");
+                set_tasks(&self.state.tasks);
+                false
+            },
+            Msg::CreateNewTask => {
+                self.state.show_create_task = true;
                 true
             },
-            Msg::SaveTasks => {
-                match &self.state.tasks_option {
-                    Some(tasks) => {
-                        set_tasks(tasks);
-                    },
-                    None => {}
-                }
-                false
+            Msg::CommitNewTask(task) => {
+                self.state.tasks.push(task);
+                self.state.show_create_task = false;
+                true
+            },
+            Msg::CancelCreateTask => {
+                self.state.show_create_task = false;
+                true
             }
         }
     }
@@ -55,27 +71,34 @@ impl Component for Home {
     }
 
     fn view(&self) -> Html {
-        let content = match &self.state.tasks_option {
-            Some(tasks) => tasks
+        let tasks_html = match self.state.tasks.len() {
+            0 => html! {<span>{"No elements at this time :("}</span>},
+            _ => self.state.tasks
                 .iter()
                 .map(|task| {
-                    html! {
-                        <div>
-                            <input type="checkbox" id={&task.id} name={&task.name} checked={task.checked} />
-                            <span>{&task.name}</span>
-                        </div>
+                    html!{
+                        <TaskComponent task={task} on_tick={self.link.callback(|_| Msg::SaveTasks)}></TaskComponent>
                     }
                 })
-                .collect(),
-            None => html! {<span>{"Loading..."}</span>}
+                .collect()
         };
 
-        let on_save = self.link.callback(move |_| {Msg::SaveTasks});
+        let new_task_html = if self.state.show_create_task {
+            let on_create = self.link.callback(|task: Task| {Msg::CommitNewTask(task)});
+            let on_cancel = self.link.callback(|_| {Msg::CancelCreateTask});
+            html! {
+                <TaskCreator id={0} on_create={on_create} on_cancel={on_cancel} />
+            }
+        } else {
+            html! {
+                <button onclick={self.link.callback(|_| {Msg::CreateNewTask})}>{"Add New Task"}</button>
+            }
+        };
 
         html! {
             <>
-                <div>{content}</div>
-                <button onclick={on_save}>{"Save"}</button>
+                <div>{tasks_html}</div>
+                <div>{new_task_html}</div>
             </>
         }
     }
