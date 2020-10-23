@@ -1,2 +1,2 @@
-/target
-Cargo.lock
+frontend/target
+frontend/Cargo.lock
