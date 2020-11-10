@@ -1,4 +1,4 @@
-use crate::types::Task;
+use types::task::Task;
 use yew::services::console::{ConsoleService};
 use yew::prelude::*;
 

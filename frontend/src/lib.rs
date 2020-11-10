@@ -1,5 +1,4 @@
 mod pages;
-mod types;
 mod apis;
 mod components;
 

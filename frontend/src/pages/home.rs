@@ -1,5 +1,5 @@
 use yew::prelude::*;
-use crate::types::{Task};
+use types::task::{Task};
 use crate::apis::{get_tasks, set_tasks};
 use crate::components::{TaskComponent, TaskCreator};
 use yew::format::{Nothing};
@@ -7,23 +7,23 @@ use yew::services::fetch::{FetchService,Request,Response,FetchTask};
 use yew::services::console::{ConsoleService};
 
 struct State {
-    tasks: Vec<Task>,
-    show_create_task: bool,
-    word_from_hi_api: Option<String>,
+    tasks_option: Option<Vec<Task>>,
+    show_create_task: bool
 }
 
 pub struct Home {
     state: State,
     link: ComponentLink<Self>,
-    fetch_hi_task: FetchTask,
+    fetch_tasks: FetchTask,
 }
 
 pub enum Msg {
-    SaveTasks,
-    CreateNewTask,
+    FetchTasks,
+    RecieveTasks(Vec<Task>),
+    StartCreatingNewTask,
     CommitNewTask(Task),
     CancelCreateTask,
-    SetHiWord(String)
+    MarkTaskCompleted(i32),
 }
 
 impl Component for Home {
@@ -40,43 +40,53 @@ impl Component for Home {
         };
 
         // Send out the fetch to populate the word from hi
-        let get = Request::get("/hi").body(Nothing).unwrap();
-        let fetch_hi_task = FetchService::fetch(
+        let get = Request::get("/task").body(Nothing).unwrap();
+        let fetch_tasks = FetchService::fetch(
             get,
             link.callback(|response: Response<Result<String, _>>| {
-                if let (meta, Ok(word)) = response.into_parts() {
+                if let (meta, Ok(serialized_tasks)) = response.into_parts() {
                     if meta.status.is_success() {
-                        return Msg::SetHiWord(word);
+                        // Deserialize the message
+                        let tasks: Vec<Task> = serde_json::from_str(&serialized_tasks).unwrap();
+                        return Msg::RecieveTasks(tasks);
                     }
                 }
-                Msg::SetHiWord("Oh No!".to_string())
+                Msg::RecieveTasks(vec![])
             })
         ).unwrap();
 
         Self {
             state: State {
-                tasks: tasks,
+                tasks_option: None,
                 show_create_task: false,
-                word_from_hi_api: None
             },
             link,
-            fetch_hi_task
+            fetch_tasks
         }
     }
 
     fn update(&mut self, message: Self::Message) -> ShouldRender {
         match message {
-            Msg::SaveTasks => {
-                ConsoleService::info("Saving tasks");
-                set_tasks(&self.state.tasks);
+            // Fetch the tasks that the user has saved
+            Msg::FetchTasks => {
                 false
             },
-            Msg::CreateNewTask => {
+            // The message to handle the fetch of tasks coming back
+            Msg::RecieveTasks(tasks) => {
+                self.state.tasks_option= Some(tasks);
+                true
+            }
+            Msg::StartCreatingNewTask => {
                 self.state.show_create_task = true;
                 true
             },
             Msg::CommitNewTask(task) => {
-                self.state.tasks.push(task);
+                match &mut self.state.tasks_option {
+                    // If there are already tasks, add to them
+                    Some(tasks) => tasks.push(task),
+                    // otherwise start a new list of tasks
+                    None => self.state.tasks_option = Some(vec![task]),
+                }
                 self.state.show_create_task = false;
                 true
             },
@@ -84,9 +94,9 @@ impl Component for Home {
                 self.state.show_create_task = false;
                 true
             },
-            Msg::SetHiWord(word) => {
-                self.state.word_from_hi_api = Some(word);
-                true
+            Msg::MarkTaskCompleted(task_id) => {
+                // Don't do anything here atm
+                false
             }
         }
     }
@@ -96,16 +106,24 @@ impl Component for Home {
     }
 
     fn view(&self) -> Html {
-        let tasks_html = match self.state.tasks.len() {
-            0 => html! {<span>{"No elements at this time :("}</span>},
-            _ => self.state.tasks
-                .iter()
-                .map(|task| {
-                    html!{
-                        <TaskComponent task={task} on_tick={self.link.callback(|_| Msg::SaveTasks)}></TaskComponent>
-                    }
-                })
-                .collect()
+        let tasks_html = match &self.state.tasks_option {
+            // Show a loading message for the time being, this short circuits the rendering to just show this span
+            None => return html! {<span>{"Waiting for tasks to be fetched"}</span>},
+            // The tasks have been fetched
+            Some(tasks) =>{
+                match tasks.len() {
+                    0 => html! {<span>{"No tasks have been added to your list yet"}</span>},
+                    _ => tasks
+                    .iter()
+                    .map(|task| {
+                        let task_id = task.id;
+                        html!{
+                            <TaskComponent task={task} on_tick={self.link.callback(move |_| Msg::MarkTaskCompleted(task_id))}></TaskComponent>
+                        }
+                    })
+                    .collect()
+                }
+            }
         };
 
         let new_task_html = if self.state.show_create_task {
@@ -116,18 +134,12 @@ impl Component for Home {
             }
         } else {
             html! {
-                <button onclick={self.link.callback(|_| {Msg::CreateNewTask})}>{"Add New Task"}</button>
+                <button onclick={self.link.callback(|_| {Msg::StartCreatingNewTask})}>{"Add New Task"}</button>
             }
-        };
-
-        let word_from_hi_html = match &self.state.word_from_hi_api {
-            None => html!{<p>{"No word yet"}</p>},
-            Some(word) => html!{<p>{word}</p>}
         };
 
         html! {
             <>
-                <div>{word_from_hi_html}</div>
                 <div>{tasks_html}</div>
                 <div>{new_task_html}</div>
             </>

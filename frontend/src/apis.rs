@@ -1,6 +1,6 @@
 use yew::services::storage::{StorageService,Area};
 use yew::services::console::{ConsoleService};
-use crate::types::{Task};
+use types::task::{Task};
 
 pub fn get_tasks() -> Result<Vec<Task>, ()> {
     // TODO: More safe way to handle than unwrap??
