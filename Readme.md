@@ -1,6 +1,6 @@
 # Skyler's Bullshit Point Tracking System
 
-## Building
+## Building the Frontend
 
 To build locally, should first get rust up and running, and install some crates
 
@@ -9,13 +9,13 @@ cargo install wasm-pack
 cargo install cargo-make
 ```
 
-Then run
+Then from the frontend run
 
 ```
 cargo make build
 ```
 
-## Serving
+## Serving the Backend
 
 In order to see the running example, first build the site as above. Then, from the backend directory, run:
 

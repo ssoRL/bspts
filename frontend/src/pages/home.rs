@@ -2,16 +2,20 @@ use yew::prelude::*;
 use crate::types::{Task};
 use crate::apis::{get_tasks, set_tasks};
 use crate::components::{TaskComponent, TaskCreator};
+use yew::format::{Nothing};
+use yew::services::fetch::{FetchService,Request,Response,FetchTask};
 use yew::services::console::{ConsoleService};
 
 struct State {
     tasks: Vec<Task>,
-    show_create_task: bool
+    show_create_task: bool,
+    word_from_hi_api: Option<String>,
 }
 
 pub struct Home {
     state: State,
     link: ComponentLink<Self>,
+    fetch_hi_task: FetchTask,
 }
 
 pub enum Msg {
@@ -19,6 +23,7 @@ pub enum Msg {
     CreateNewTask,
     CommitNewTask(Task),
     CancelCreateTask,
+    SetHiWord(String)
 }
 
 impl Component for Home {
@@ -34,12 +39,28 @@ impl Component for Home {
             Err(_) => vec![]
         };
 
+        // Send out the fetch to populate the word from hi
+        let get = Request::get("/hi").body(Nothing).unwrap();
+        let fetch_hi_task = FetchService::fetch(
+            get,
+            link.callback(|response: Response<Result<String, _>>| {
+                if let (meta, Ok(word)) = response.into_parts() {
+                    if meta.status.is_success() {
+                        return Msg::SetHiWord(word);
+                    }
+                }
+                Msg::SetHiWord("Oh No!".to_string())
+            })
+        ).unwrap();
+
         Self {
             state: State {
                 tasks: tasks,
                 show_create_task: false,
+                word_from_hi_api: None
             },
-            link
+            link,
+            fetch_hi_task
         }
     }
 
@@ -61,6 +82,10 @@ impl Component for Home {
             },
             Msg::CancelCreateTask => {
                 self.state.show_create_task = false;
+                true
+            },
+            Msg::SetHiWord(word) => {
+                self.state.word_from_hi_api = Some(word);
                 true
             }
         }
@@ -95,8 +120,14 @@ impl Component for Home {
             }
         };
 
+        let word_from_hi_html = match &self.state.word_from_hi_api {
+            None => html!{<p>{"No word yet"}</p>},
+            Some(word) => html!{<p>{word}</p>}
+        };
+
         html! {
             <>
+                <div>{word_from_hi_html}</div>
                 <div>{tasks_html}</div>
                 <div>{new_task_html}</div>
             </>
