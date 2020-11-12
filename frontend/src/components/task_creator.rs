@@ -1,4 +1,4 @@
-use types::task::Task;
+use types::task::{NewTask, TaskInterval};
 use yew::services::console::{ConsoleService};
 use yew::prelude::*;
 
@@ -11,12 +11,12 @@ pub struct TaskCreator {
 #[derive(Properties, Clone)]
 pub struct Props {
     pub id: i32,
-    pub on_create: Callback<Task>,
+    pub on_create: Callback<NewTask>,
     pub on_cancel: Callback<()>,
 }
 
 pub struct State {
-    pub task: Task,
+    pub task: NewTask,
 }
 
 pub enum Msg {
@@ -32,7 +32,12 @@ impl Component for TaskCreator {
     fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
         Self {
             state : State{
-                task: Task::new(props.id),
+                task: NewTask {
+                    name: "".to_string(),
+                    description: "".to_string(),
+                    bspts: 0,
+                    frequency: TaskInterval::Days(1),
+                }
             },
             props,
             link,

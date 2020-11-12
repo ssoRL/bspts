@@ -1,27 +1,27 @@
 use yew::prelude::*;
-use types::task::{Task};
-use crate::apis::{get_tasks, set_tasks};
+use types::task::{Task, NewTask};
+use crate::apis::{get_tasks,FetchResponse};
 use crate::components::{TaskComponent, TaskCreator};
-use yew::format::{Nothing};
-use yew::services::fetch::{FetchService,Request,Response,FetchTask};
+use yew::format::{Json,Nothing};
+use yew::services::fetch::{FetchTask};
 use yew::services::console::{ConsoleService};
 
 struct State {
     tasks_option: Option<Vec<Task>>,
-    show_create_task: bool
+    show_create_task_component: bool,
 }
 
 pub struct Home {
     state: State,
     link: ComponentLink<Self>,
-    fetch_tasks: FetchTask,
+    fetch_tasks: Option<FetchTask>,
 }
 
 pub enum Msg {
     FetchTasks,
     RecieveTasks(Vec<Task>),
-    StartCreatingNewTask,
-    CommitNewTask(Task),
+    OpenTaskCreationComponent,
+    CommitNewTask(NewTask),
     CancelCreateTask,
     MarkTaskCompleted(i32),
 }
@@ -32,36 +32,17 @@ impl Component for Home {
 
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
         ConsoleService::info("Getting tasks");
-        let tasks_result = get_tasks();
-        // TODO: error handling
-        let tasks = match tasks_result {
-            Ok(tasks) => tasks,
-            Err(_) => vec![]
-        };
 
-        // Send out the fetch to populate the word from hi
-        let get = Request::get("/task").body(Nothing).unwrap();
-        let fetch_tasks = FetchService::fetch(
-            get,
-            link.callback(|response: Response<Result<String, _>>| {
-                if let (meta, Ok(serialized_tasks)) = response.into_parts() {
-                    if meta.status.is_success() {
-                        // Deserialize the message
-                        let tasks: Vec<Task> = serde_json::from_str(&serialized_tasks).unwrap();
-                        return Msg::RecieveTasks(tasks);
-                    }
-                }
-                Msg::RecieveTasks(vec![])
-            })
-        ).unwrap();
+        // Get the ball rolling on getting the tasks
+        link.send_message(Msg::FetchTasks);
 
         Self {
             state: State {
                 tasks_option: None,
-                show_create_task: false,
+                show_create_task_component: false,
             },
             link,
-            fetch_tasks
+            fetch_tasks: None
         }
     }
 
@@ -69,6 +50,16 @@ impl Component for Home {
         match message {
             // Fetch the tasks that the user has saved
             Msg::FetchTasks => {
+                let fetch_tasks_task = get_tasks(self.link.callback(|response: FetchResponse<Vec<Task>>| {
+                    if let (_, Json(Ok(tasks))) = response.into_parts() {
+                        Msg::RecieveTasks(tasks)
+                    } else {
+                        // TODO: show an error in this case
+                        Msg::RecieveTasks(vec![])
+                    }
+                }));
+                // Save the fetch task in the component so it's not canceled by yew
+                self.fetch_tasks = Some(fetch_tasks_task);
                 false
             },
             // The message to handle the fetch of tasks coming back
@@ -76,22 +67,23 @@ impl Component for Home {
                 self.state.tasks_option= Some(tasks);
                 true
             }
-            Msg::StartCreatingNewTask => {
-                self.state.show_create_task = true;
+            Msg::OpenTaskCreationComponent => {
+                self.state.show_create_task_component = true;
                 true
             },
-            Msg::CommitNewTask(task) => {
-                match &mut self.state.tasks_option {
-                    // If there are already tasks, add to them
-                    Some(tasks) => tasks.push(task),
-                    // otherwise start a new list of tasks
-                    None => self.state.tasks_option = Some(vec![task]),
-                }
-                self.state.show_create_task = false;
+            Msg::CommitNewTask(new_task) => {
+                // TODO: Add code to save a new task after it's created
+                // match &mut self.state.tasks_option {
+                //     // If there are already tasks, add to them
+                //     Some(tasks) => tasks.push(task),
+                //     // otherwise start a new list of tasks
+                //     None => self.state.tasks_option = Some(vec![task]),
+                // }
+                self.state.show_create_task_component = false;
                 true
             },
             Msg::CancelCreateTask => {
-                self.state.show_create_task = false;
+                self.state.show_create_task_component = false;
                 true
             },
             Msg::MarkTaskCompleted(task_id) => {
@@ -126,15 +118,15 @@ impl Component for Home {
             }
         };
 
-        let new_task_html = if self.state.show_create_task {
-            let on_create = self.link.callback(|task: Task| {Msg::CommitNewTask(task)});
+        let new_task_html = if self.state.show_create_task_component {
+            let on_create = self.link.callback(|task: NewTask| {Msg::CommitNewTask(task)});
             let on_cancel = self.link.callback(|_| {Msg::CancelCreateTask});
             html! {
                 <TaskCreator id={0} on_create={on_create} on_cancel={on_cancel} />
             }
         } else {
             html! {
-                <button onclick={self.link.callback(|_| {Msg::StartCreatingNewTask})}>{"Add New Task"}</button>
+                <button onclick={self.link.callback(|_| {Msg::OpenTaskCreationComponent})}>{"Add New Task"}</button>
             }
         };
 

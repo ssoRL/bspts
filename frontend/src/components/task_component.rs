@@ -33,7 +33,7 @@ impl Component for TaskComponent {
 
         html! {
             <div>
-                <input type="checkbox" onclick={on_tick} id={&task.id} name={&task.name} checked={task.checked} />
+                <input type="checkbox" onclick={on_tick} id={&task.id} name={&task.name} checked={task.is_done} />
                 <span>{&task.name}</span>
             </div>
         }
