@@ -1,2 +1,9 @@
-database
+read from database
+write to database
+data base connection code module
+see about making the types in "types/" derive queryable
+user table
+treats
+make the ui look not like trash
+rust tests
 docker???
