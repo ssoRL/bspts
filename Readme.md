@@ -25,6 +25,22 @@ cargo run
 
 and then navigate your browser to `http://localhost:3030/`
 
+## Database
+
+The database is a postgres db managed by [diesel](http://diesel.rs/). To download postgres for mac run:
+
+```
+brew install postgres
+```
+
+and to start the db run:
+
+```
+brew services start postgres
+```
+
+All changes to the database should be handled via diesel's migration pattern. The migrations are stored under `backend/migrations/`.
+
 ## Further references
 
 This site is based off of [this Tutorial](http://www.sheshbabu.com/posts/rust-wasm-yew-single-page-application/)
