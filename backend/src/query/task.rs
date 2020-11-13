@@ -1,20 +1,9 @@
 use diesel::prelude::*;
-use diesel::pg::PgConnection;
-use dotenv::dotenv;
-use std::env;
 use types::task::{Task, NewTask, TaskInterval};
 use crate::models;
 use diesel::pg::data_types::PgInterval;
 use chrono::{Local, NaiveDate, Duration, Datelike};
-
-fn establish_connection() -> PgConnection {
-    dotenv().ok();
-
-    let database_url = env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set");
-    PgConnection::establish(&database_url)
-        .expect(&format!("Error connecting to {}", database_url))
-}
+use crate::PgPooledConnection;
 
 fn convert_model_task_to_transport_task(model_task: &models::Task) -> Task {
     let freq =  match model_task.frequency.months {
@@ -55,16 +44,15 @@ fn calc_next_reset(current_reset_date: NaiveDate, frequency: TaskInterval) -> Na
 }
 
 /// Get all of the tasks for the user
-pub fn get_tasks() -> Vec<Task> {
+pub fn get_tasks(conn: PgPooledConnection) -> Vec<Task> {
     use crate::schema::tasks::dsl::*;
 
-    let connection = establish_connection();
-    let model_tasks = tasks.limit(5).load::<models::Task>(&connection).expect("Error loading posts");
+    let model_tasks = tasks.limit(5).load::<models::Task>(&conn).expect("Error loading posts");
     model_tasks.iter().map(convert_model_task_to_transport_task).collect()
 }
 
 /// Add a new task to the database
-pub fn commit_new_task(new_task: NewTask) -> Task {
+pub fn commit_new_task(new_task: NewTask, conn: PgPooledConnection) -> Task {
     use crate::schema::tasks;
 
     // First add the required fields to save the task
@@ -81,10 +69,9 @@ pub fn commit_new_task(new_task: NewTask) -> Task {
         next_reset,
         frequency,
     };
-    let connection = establish_connection();
     let committed_task: models::Task = diesel::insert_into(tasks::table)
         .values(&full_task)
-        .get_result(&connection)
+        .get_result(&conn)
         .expect("Error saving new post");
     convert_model_task_to_transport_task(&committed_task)
 }
