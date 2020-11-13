@@ -13,8 +13,8 @@ pub struct NewTask {
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum TaskInterval {
-    Days(i32),
-    Months(i32),
+    Days(u32),
+    Months(u32),
 }
 
 #[derive(Deserialize, Serialize, Clone, Debug)]

@@ -1,4 +1,3 @@
-write to database
 data base connection code module
 see about making the types in "types/" derive queryable
 serialize to something other than JSON??
