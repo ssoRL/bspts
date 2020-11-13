@@ -1,14 +1,20 @@
 use yew::prelude::*;
 use types::task::{Task, NewTask};
-use crate::apis::{get_tasks,FetchResponse};
+use crate::apis::{get_tasks,commit_new_task,FetchResponse};
 use crate::components::{TaskComponent, TaskCreator};
-use yew::format::{Json,Nothing};
+use yew::format::{Json};
 use yew::services::fetch::{FetchTask};
 use yew::services::console::{ConsoleService};
 
+enum NewTaskComponentState {
+    Closed,
+    Open,
+    Committing,
+}
+
 struct State {
     tasks_option: Option<Vec<Task>>,
-    show_create_task_component: bool,
+    create_task: NewTaskComponentState,
 }
 
 pub struct Home {
@@ -22,6 +28,7 @@ pub enum Msg {
     RecieveTasks(Vec<Task>),
     OpenTaskCreationComponent,
     CommitNewTask(NewTask),
+    NewTaskCommitted(Task),
     CancelCreateTask,
     MarkTaskCompleted(i32),
 }
@@ -39,7 +46,7 @@ impl Component for Home {
         Self {
             state: State {
                 tasks_option: None,
-                show_create_task_component: false,
+                create_task: NewTaskComponentState::Closed,
             },
             link,
             fetch_tasks: None
@@ -68,22 +75,35 @@ impl Component for Home {
                 true
             }
             Msg::OpenTaskCreationComponent => {
-                self.state.show_create_task_component = true;
+                self.state.create_task = NewTaskComponentState::Open;
                 true
             },
             Msg::CommitNewTask(new_task) => {
-                // TODO: Add code to save a new task after it's created
-                // match &mut self.state.tasks_option {
-                //     // If there are already tasks, add to them
-                //     Some(tasks) => tasks.push(task),
-                //     // otherwise start a new list of tasks
-                //     None => self.state.tasks_option = Some(vec![task]),
-                // }
-                self.state.show_create_task_component = false;
+                self.state.create_task = NewTaskComponentState::Committing;
+                let task_committed_callback = self.link.callback(|response: FetchResponse<Task>| {
+                    if let (_, Json(Ok(task))) = response.into_parts() {
+                        Msg::NewTaskCommitted(task)
+                    } else {
+                        // TODO: error
+                        Msg::CancelCreateTask
+                    }
+                });
+                self.fetch_tasks = Some(commit_new_task(new_task, task_committed_callback));
                 true
             },
+            Msg::NewTaskCommitted(task) => {
+                // The task has been added on the backend, add it to the UI now
+                match &mut self.state.tasks_option {
+                    // If there are already tasks, add to them
+                    Some(tasks) => tasks.push(task),
+                    // otherwise start a new list of tasks
+                    None => self.state.tasks_option = Some(vec![task]),
+                };
+                self.state.create_task = NewTaskComponentState::Closed;
+                true
+            }
             Msg::CancelCreateTask => {
-                self.state.show_create_task_component = false;
+                self.state.create_task = NewTaskComponentState::Closed;
                 true
             },
             Msg::MarkTaskCompleted(task_id) => {
@@ -99,7 +119,8 @@ impl Component for Home {
 
     fn view(&self) -> Html {
         let tasks_html = match &self.state.tasks_option {
-            // Show a loading message for the time being, this short circuits the rendering to just show this span
+            // Show a loading message for the time being
+            // this short circuits the rendering to just show this span
             None => return html! {<span>{"Waiting for tasks to be fetched"}</span>},
             // The tasks have been fetched
             Some(tasks) =>{
@@ -118,16 +139,24 @@ impl Component for Home {
             }
         };
 
-        let new_task_html = if self.state.show_create_task_component {
-            let on_create = self.link.callback(|task: NewTask| {Msg::CommitNewTask(task)});
-            let on_cancel = self.link.callback(|_| {Msg::CancelCreateTask});
-            html! {
-                <TaskCreator id={0} on_create={on_create} on_cancel={on_cancel} />
-            }
-        } else {
-            html! {
-                <button onclick={self.link.callback(|_| {Msg::OpenTaskCreationComponent})}>{"Add New Task"}</button>
-            }
+        let new_task_html = match self.state.create_task {
+            NewTaskComponentState::Open => {
+                let on_create = self.link.callback(|task: NewTask| {Msg::CommitNewTask(task)});
+                let on_cancel = self.link.callback(|_| {Msg::CancelCreateTask});
+                html! {
+                    <TaskCreator id={0} on_create={on_create} on_cancel={on_cancel} />
+                }
+            },
+            NewTaskComponentState::Closed => {
+                html! {
+                    <button onclick={self.link.callback(|_| {Msg::OpenTaskCreationComponent})}>{"Add New Task"}</button>
+                }
+            },
+            NewTaskComponentState::Committing => {
+                html! {
+                    <span>{"Committing the new task!"}</span>
+                }
+            },
         };
 
         html! {
