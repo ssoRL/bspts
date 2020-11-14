@@ -16,14 +16,9 @@ pub fn get_tasks(callback: FetchCallback<Vec<Task>>) -> FetchTask {
 
 /// Commits a new task to 
 pub fn commit_new_task(new_task: NewTask, callback: FetchCallback<Task>) -> FetchTask {
-    // Send out the fetch to populate the word from hi
-    let body_serialized = serde_json::to_string(&new_task);
-    // TODO: Is this really the only way??
-    let dumb = Ok(body_serialized.unwrap());
-
     let post_new_task = Request::post("/task")
         .header("Content-Type", "application/json")
-        .body(dumb)
+        .body(Json(&new_task))
         .unwrap();
     FetchService::fetch(post_new_task, callback).unwrap()
 }
