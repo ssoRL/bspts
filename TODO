@@ -1,6 +1,13 @@
-serialize to something other than JSON??
-user table
-treats
+BASICS:
 make the ui look not like trash
 rust tests
+rationalize the building
 docker???
+login (bearer token in storage?)
+logging
+chron jobs to mark done
+send reminder emails
+
+FEATURES:
+user table
+goodies
