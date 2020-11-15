@@ -15,6 +15,7 @@ enum NewTaskComponentState {
 struct State {
     tasks_option: Option<Vec<Task>>,
     create_task: NewTaskComponentState,
+    error_message: Option<String>,
 }
 
 pub struct Home {
@@ -31,6 +32,7 @@ pub enum Msg {
     NewTaskCommitted(Task),
     CancelCreateTask,
     MarkTaskCompleted(i32),
+    ShowError(String),
 }
 
 impl Component for Home {
@@ -47,6 +49,7 @@ impl Component for Home {
             state: State {
                 tasks_option: None,
                 create_task: NewTaskComponentState::Closed,
+                error_message: None
             },
             link,
             fetch_tasks: None
@@ -62,7 +65,7 @@ impl Component for Home {
                         Msg::RecieveTasks(tasks)
                     } else {
                         // TODO: show an error in this case
-                        Msg::RecieveTasks(vec![])
+                        Msg::ShowError("Failed to deserialize tasks".to_string())
                     }
                 }));
                 // Save the fetch task in the component so it's not canceled by yew
@@ -109,6 +112,10 @@ impl Component for Home {
             Msg::MarkTaskCompleted(task_id) => {
                 // Don't do anything here atm
                 false
+            },
+            Msg::ShowError(msg) => {
+                self.state.error_message = Some(msg);
+                true
             }
         }
     }
@@ -118,6 +125,12 @@ impl Component for Home {
     }
 
     fn view(&self) -> Html {
+        if let Some(msg) = &self.state.error_message {
+            return html! {
+                <span>{msg}</span>
+            }
+        }
+
         let tasks_html = match &self.state.tasks_option {
             // Show a loading message for the time being
             // this short circuits the rendering to just show this span
