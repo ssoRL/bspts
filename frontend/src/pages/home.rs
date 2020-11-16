@@ -1,7 +1,7 @@
 use yew::prelude::*;
 use types::task::{Task, NewTask};
 use crate::apis::{get_tasks,commit_new_task,FetchResponse};
-use crate::components::{TaskComponent, TaskCreator};
+use crate::components::{TaskItem, TaskCreator};
 use yew::format::{Json};
 use yew::services::fetch::{FetchTask};
 use yew::services::console::{ConsoleService};
@@ -144,7 +144,7 @@ impl Component for Home {
                     .map(|task| {
                         let task_id = task.id;
                         html!{
-                            <TaskComponent task={task} on_tick={self.link.callback(move |_| Msg::MarkTaskCompleted(task_id))}></TaskComponent>
+                            <TaskItem task={task} on_tick={self.link.callback(move |_| Msg::MarkTaskCompleted(task_id))} />
                         }
                     })
                     .collect()
