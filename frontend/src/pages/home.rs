@@ -162,7 +162,12 @@ impl Component for Home {
             },
             NewTaskComponentState::Closed => {
                 html! {
-                    <button onclick={self.link.callback(|_| {Msg::OpenTaskCreationComponent})}>{"Add New Task"}</button>
+                    <div 
+                        class="add-new-task-button"
+                        onclick={self.link.callback(|_| {Msg::OpenTaskCreationComponent})}
+                    >
+                        {"Add New Task"}
+                    </div>
                 }
             },
             NewTaskComponentState::Committing => {
@@ -174,8 +179,8 @@ impl Component for Home {
 
         html! {
             <>
-                <div>{tasks_html}</div>
                 <div>{new_task_html}</div>
+                <div class="badge-field">{tasks_html}</div>
             </>
         }
     }

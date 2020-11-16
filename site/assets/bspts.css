@@ -1,0 +1,96 @@
+:root {
+    --text-color: rgb(50,50,50);
+  }
+
+body {
+    background: rgb(250,250,255);
+}
+
+h1 {
+    font-weight: bold;
+    font-family: sans-serif;
+    color: var(--text-color);
+    width: 100%;
+    border-bottom: dimgray 4px solid;
+    margin-bottom: 0;
+}
+
+/* The field of square shaped badges that overflow into the next line */
+.badge-field {
+    width: 80%;
+    min-width: 500px;
+    margin: auto;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.badge {
+    position: relative;
+    width: 200px;
+    height: 200px;
+    margin: 20px;
+    transition: all 200ms;
+    border: 2px solid dimgray;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-family: sans-serif;
+}
+
+/* Generic styles */
+.flex-buffer {
+    flex-grow: 1;
+}
+
+/* Styling for the "Add Task" component */
+.add-new-task-button {
+    font-size: 70px;
+    font-variant: small-caps;
+    font-family: sans-serif;
+    text-align: center;
+    width: 80%;
+    max-width: 500px;
+    padding: 30px 50px;
+    margin: auto;
+    background-color: tomato;
+    color: whitesmoke;
+    cursor: pointer;
+}
+
+/* Styles for the items on the task page */
+.task-item .task-name {
+    font-size: 40px;
+}
+
+.task-item .info-line {
+    font-size: 20px;
+    width: 95%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.task-item .thumbnail {
+    font-size: 90px;
+    color: blue;
+}
+
+.task-item .buttons {
+    width: 95%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.task-item .buttons .edit {
+    padding: 8px 18px;
+    border: 2px solid var(--text-color);
+}
+
+.task-item .buttons .done {
+    padding: 10px 20px;
+    background-color: blue;
+    color: white;
+}

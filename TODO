@@ -1,5 +1,5 @@
 BASICS:
-make the ui look not like trash
+modal for create/edit/delete
 rust tests
 rationalize the building
 docker???
@@ -9,6 +9,8 @@ chron jobs to mark done
 send reminder emails
 
 FEATURES:
+edit/delete task
 user table
-set icons
+check off task
 goodies
+set icons
