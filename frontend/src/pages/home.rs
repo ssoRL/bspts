@@ -1,20 +1,14 @@
 use yew::prelude::*;
-use types::task::{Task, NewTask};
-use crate::apis::{get_tasks,commit_new_task,FetchResponse};
-use crate::components::{TaskItem, TaskCreator};
+use types::task::{Task, NewTask, TaskInterval};
+use crate::apis::{get_tasks, commit_new_task, FetchResponse};
+use crate::components::{TaskItem, TaskEditor, Popup};
 use yew::format::{Json};
 use yew::services::fetch::{FetchTask};
 use yew::services::console::{ConsoleService};
 
-enum NewTaskComponentState {
-    Closed,
-    Open,
-    Committing,
-}
-
 struct State {
     tasks_option: Option<Vec<Task>>,
-    create_task: NewTaskComponentState,
+    edit_popup: bool,
     error_message: Option<String>,
 }
 
@@ -28,7 +22,6 @@ pub enum Msg {
     FetchTasks,
     RecieveTasks(Vec<Task>),
     OpenTaskCreationComponent,
-    CommitNewTask(NewTask),
     NewTaskCommitted(Task),
     CancelCreateTask,
     MarkTaskCompleted(i32),
@@ -48,7 +41,7 @@ impl Component for Home {
         Self {
             state: State {
                 tasks_option: None,
-                create_task: NewTaskComponentState::Closed,
+                edit_popup: false,
                 error_message: None
             },
             link,
@@ -78,20 +71,7 @@ impl Component for Home {
                 true
             }
             Msg::OpenTaskCreationComponent => {
-                self.state.create_task = NewTaskComponentState::Open;
-                true
-            },
-            Msg::CommitNewTask(new_task) => {
-                self.state.create_task = NewTaskComponentState::Committing;
-                let task_committed_callback = self.link.callback(|response: FetchResponse<Task>| {
-                    if let (_, Json(Ok(task))) = response.into_parts() {
-                        Msg::NewTaskCommitted(task)
-                    } else {
-                        // TODO: error
-                        Msg::CancelCreateTask
-                    }
-                });
-                self.fetch_tasks = Some(commit_new_task(new_task, task_committed_callback));
+                self.state.edit_popup = true;
                 true
             },
             Msg::NewTaskCommitted(task) => {
@@ -102,11 +82,11 @@ impl Component for Home {
                     // otherwise start a new list of tasks
                     None => self.state.tasks_option = Some(vec![task]),
                 };
-                self.state.create_task = NewTaskComponentState::Closed;
+                self.state.edit_popup = false;
                 true
             }
             Msg::CancelCreateTask => {
-                self.state.create_task = NewTaskComponentState::Closed;
+                self.state.edit_popup = false;
                 true
             },
             Msg::MarkTaskCompleted(task_id) => {
@@ -152,29 +132,23 @@ impl Component for Home {
             }
         };
 
-        let new_task_html = match self.state.create_task {
-            NewTaskComponentState::Open => {
-                let on_create = self.link.callback(|task: NewTask| {Msg::CommitNewTask(task)});
-                let on_cancel = self.link.callback(|_| {Msg::CancelCreateTask});
-                html! {
-                    <TaskCreator id={0} on_create={on_create} on_cancel={on_cancel} />
-                }
-            },
-            NewTaskComponentState::Closed => {
-                html! {
-                    <div 
-                        class="add-new-task-button"
-                        onclick={self.link.callback(|_| {Msg::OpenTaskCreationComponent})}
-                    >
-                        {"Add New Task"}
-                    </div>
-                }
-            },
-            NewTaskComponentState::Committing => {
-                html! {
-                    <span>{"Committing the new task!"}</span>
-                }
-            },
+        let new_task_html = if self.state.edit_popup {
+            let on_create = self.link.callback(|task: Task| {Msg::NewTaskCommitted(task)});
+            let on_cancel = self.link.callback(|_| {Msg::CancelCreateTask});
+            html! {
+                <Popup>
+                    <TaskEditor task_to_edit={None} on_create={on_create} on_cancel={on_cancel} />
+                </Popup>
+            }
+        } else {
+            html! {
+                <div 
+                    class="add-new-task button"
+                    onclick={self.link.callback(|_| {Msg::OpenTaskCreationComponent})}
+                >
+                    {"Add New Task"}
+                </div>
+            }
         };
 
         html! {

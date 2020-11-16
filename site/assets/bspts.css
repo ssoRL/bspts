@@ -45,10 +45,14 @@ h1 {
     flex-grow: 1;
 }
 
-/* Styling for the "Add Task" component */
-.add-new-task-button {
-    font-size: 70px;
+.button {
+    cursor: pointer;
     font-variant: small-caps;
+}
+
+/* Styling for the "Add Task" component */
+.add-new-task.button {
+    font-size: 70px;
     font-family: sans-serif;
     text-align: center;
     width: 80%;
@@ -57,7 +61,6 @@ h1 {
     margin: auto;
     background-color: tomato;
     color: whitesmoke;
-    cursor: pointer;
 }
 
 /* Styles for the items on the task page */
@@ -94,4 +97,65 @@ h1 {
     padding: 10px 20px;
     background-color: green;
     color: white;
+}
+
+/* Styles for the popups */
+.pop-up-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(50, 50, 50, .85);
+    z-index: 3;
+    display: flex;
+    align-items: center;
+}
+
+.popup {
+    background-color: white;
+    margin: auto;
+    padding: 20px;
+    border-radius: 5px;
+    max-width: 70%;
+}
+
+.pop-up-content {
+    width: 100%;
+}
+
+/* styles for forms */
+.form {
+    background-color: white;
+    color: var(--text-color);
+    font-size: 30px;
+    font-family: sans-serif;
+}
+
+.form div {
+    margin: 20px 0;
+}
+
+.title-input {
+    font-size: 50px;
+    display: block;
+    margin: auto;
+    width: 80%;
+}
+
+.form .button-line {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+}
+
+.form .save.button {
+    padding: 10px 20px;
+    background-color: green;
+    color: white;
+}
+
+.form .cancel.button {
+    padding: 8px 18px;
+    border: 2px solid var(--text-color);
 }

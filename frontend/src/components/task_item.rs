@@ -67,9 +67,9 @@ impl Component for TaskItem {
                 </div>
                 <i class="thumbnail fas fa-coffee"></i>
                 <div class="buttons">
-                    <span class="edit">{"EDIT"}</span>
+                    <span class="edit button">{"Edit"}</span>
                     <span class="flex-buffer"></span>
-                    <span class="done">{"DONE"}</span>
+                    <span class="done button">{"Done"}</span>
                 </div>
             </div>
         }
