@@ -1,5 +1,4 @@
 BASICS:
-yew tests
 rationalize the building
 documentation
 docker???
@@ -7,6 +6,7 @@ login (bearer token in storage?)
 logging
 chron jobs to mark done
 send reminder emails
+yew tests (Might have to do some original work here X_X)
 
 FEATURES:
 delete a task
