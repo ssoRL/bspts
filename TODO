@@ -1,7 +1,7 @@
 BASICS:
-modal for create/edit/delete
-rust tests
+yew tests
 rationalize the building
+documentation
 docker???
 login (bearer token in storage?)
 logging
@@ -9,7 +9,8 @@ chron jobs to mark done
 send reminder emails
 
 FEATURES:
-edit/delete task
+delete a task
+edit a task
 user table
 check off task
 goodies
