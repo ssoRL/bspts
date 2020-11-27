@@ -2,22 +2,20 @@
 extern crate diesel;
 extern crate dotenv;
 extern crate chrono;
+//extern crate data;
 
 mod query;
 mod models;
 mod schema;
 
-use actix::prelude::*;
 use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
 use actix_files as fs;
-use types::task::{Task, NewTask};
-use crate::query::task::*;
-use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
+use data::task::*;
+use crate::query::task::*;
 use diesel::pg::PgConnection;
 use dotenv::dotenv;
 use std::env;
-//use warp::{test};
 
 pub type PgPool = Pool<ConnectionManager<PgConnection>>;
 pub type PgPooledConnection = PooledConnection<ConnectionManager<PgConnection>>;
@@ -64,6 +62,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .data(pool.clone())
             .service(task_route)
+            .service(commit_new_task_route)
             .service(fs::Files::new("/", "../site").index_file("../site/index.html"))
     })
     .bind("127.0.0.1:3030")?

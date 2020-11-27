@@ -6,6 +6,8 @@ table! {
         bspts -> Int4,
         is_done -> Bool,
         next_reset -> Date,
-        frequency -> Interval,
+        every -> Int4,
+        time_unit -> Text,
+        by_when -> Int4,
     }
 }

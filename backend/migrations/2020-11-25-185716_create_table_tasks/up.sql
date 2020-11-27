@@ -7,5 +7,7 @@ CREATE TABLE tasks (
   bspts INTEGER NOT NULL,
   is_done BOOLEAN NOT NULL DEFAULT 'f',
   next_reset DATE NOT NULL,
-  frequency INTERVAL NOT NULL
+  every INTEGER NOT NULL,
+  time_unit TEXT NOT NULL,
+  by_when INTEGER NOT NULL
 )

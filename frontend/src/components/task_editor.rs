@@ -1,4 +1,4 @@
-use types::task::{NewTask, Task, TaskInterval};
+use data::task::*;
 use yew::services::console::{ConsoleService};
 use yew::format::{Json};
 use crate::apis::{get_tasks, commit_new_task, FetchResponse};
@@ -48,7 +48,7 @@ impl Component for TaskEditor {
                     name: "".to_string(),
                     description: "".to_string(),
                     bspts: 0,
-                    frequency: TaskInterval::Days(1),
+                    frequency: TaskInterval::Days{every: 1}
                 })
             },
             Some(task) => {

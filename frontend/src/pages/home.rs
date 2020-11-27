@@ -1,5 +1,5 @@
 use yew::prelude::*;
-use types::task::{Task, NewTask, TaskInterval};
+use data::task::{Task};
 use crate::apis::{get_tasks, commit_new_task, FetchResponse};
 use crate::components::{TaskItem, TaskEditor, Popup};
 use yew::format::{Json};

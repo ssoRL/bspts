@@ -39,7 +39,19 @@ and to start the db run:
 brew services start postgres
 ```
 
-All changes to the database should be handled via diesel's migration pattern. The migrations are stored under `backend/migrations/`.
+All changes to the database should be handled via diesel's migration pattern. The migrations are stored under `backend/migrations/`. To download the cli tools to manage the migrations, run:
+
+```
+cargo install diesel_cli --no-default-features --features "postgres"
+```
+
+### Docker
+
+To start postgres running in a container, use the command:
+
+```
+docker run --rm --name postgres -e POSTGRES_USER=bspts_user -e POSTGRES_PASSWORD=pw -e POSTGRES_DB=bspts_db -p 5433:5432 -d postgres
+```
 
 ## Further references
 

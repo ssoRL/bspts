@@ -1,24 +1,28 @@
 use chrono::{NaiveDate};
-use diesel::pg::data_types::PgInterval;
+use serde::{Deserialize, Serialize};
 use crate::schema::*;
 
-#[derive(Queryable)]
-pub struct Task {
+#[derive(Queryable, Deserialize, Serialize, Clone, Debug)]
+pub struct QFullTask {
     pub id: i32,
     pub name: String,
     pub description: String,
     pub bspts: i32,
     pub is_done: bool,
     pub next_reset: NaiveDate,
-    pub frequency: PgInterval,
+    pub every: i32,
+    pub time_unit: String,
+    pub by_when: i32,
 }
 
 #[derive(Insertable)]
 #[table_name="tasks"]
-pub struct NewTask<'a> {
+pub struct InsertableTask<'a> {
     pub name: &'a str,
     pub description: &'a str,
     pub bspts: i32,
     pub next_reset: NaiveDate,
-    pub frequency: PgInterval,
+    pub every: i32,
+    pub time_unit: &'a str,
+    pub by_when: i32,
 }

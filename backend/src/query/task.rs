@@ -1,45 +1,75 @@
 use diesel::prelude::*;
-use types::task::{Task, NewTask, TaskInterval};
-use crate::models;
-use diesel::pg::data_types::PgInterval;
-use chrono::{Local, NaiveDate, Duration, Datelike};
+use data::task::*;
+use chrono::{NaiveDate, Local, Duration, Datelike};
 use crate::PgPooledConnection;
+use crate::models;
 
-fn convert_model_task_to_transport_task(model_task: &models::Task) -> Task {
-    let freq =  match model_task.frequency.months {
-        0 => TaskInterval::Days(model_task.frequency.days as u32),
-        _ => TaskInterval::Months(model_task.frequency.months as u32),
-    };
-    Task {
-        id: model_task.id,
-        name: model_task.name.clone(),
-        description: model_task.description.clone(),
-        bspts: model_task.bspts,
-        is_done: model_task.is_done,
-        frequency: freq,
-        next_reset: model_task.next_reset
+pub const DAYS: &str = "Days";
+pub const WEEKS: &str = "Weeks";
+pub const MONTHS: &str = "Months";
+
+/// adds the frequency to the current date to get the next date this will trigger
+fn calc_next_reset(frequency: &TaskInterval) -> NaiveDate {
+    let today = Local::today().naive_local();
+    match frequency {
+        TaskInterval::Days{every} => {
+            let duration = Duration::days(*every as i64);
+            today.checked_add_signed(duration).unwrap()
+        },
+        TaskInterval::Weeks{every, weekday} => {
+            let current_day_of_week = today.weekday().num_days_from_monday();
+            // How many days until the next time weekday "by" is the day of the week
+            let days_to_jump = weekday - current_day_of_week;
+            // If this is a negative number add 7 days (skip ahead to the next week)
+            let positive_days_to_jump = if days_to_jump < 0 {
+                days_to_jump + 7
+            } else {
+                days_to_jump
+            };
+            // Add on enough weeks to compensate for the every x weeks param
+            let positive_days_to_jump_plus_weeks = if *every > 1 {
+                positive_days_to_jump + (7 * every)
+            } else {
+                positive_days_to_jump
+            };
+            let duration = Duration::days(positive_days_to_jump_plus_weeks.into());
+            today.checked_add_signed(duration).unwrap()
+        },
+        TaskInterval::Months{every, day_of_month} => {
+            let current_month = today.month0();
+            let new_month_unmodded = current_month + every;
+            // The month 0 indexed (requires 1 indexed for from_ymd fn)
+            let new_month0 = new_month_unmodded % 12;
+            let new_year = today.year() + (new_month_unmodded / 12) as i32;
+            NaiveDate::from_ymd(new_year, new_month0 + 1, *day_of_month)
+        }
     }
 }
 
-/// adds the frequency to the current date to get the next date this will trigger
-fn calc_next_reset(current_reset_date: NaiveDate, frequency: TaskInterval) -> NaiveDate {
-    match frequency {
-        TaskInterval::Days(days) => {
-            let duration = Duration::days(days.into());
-            let new_date_option = current_reset_date.checked_add_signed(duration);
-            match new_date_option {
-                Some(date) => date,
-                // This happens only in case of an overflow circa 200,000 CE
-                None => current_reset_date,
-            }
+fn query_task_to_task(qt: &models::QFullTask) -> Task {
+    let frequency = match qt.time_unit.as_str() {
+        DAYS => {
+            TaskInterval::Days{every: qt.every as u32}
         },
-        TaskInterval::Months(months) => {
-            let current_month = current_reset_date.month();
-            let new_month_unmodded = current_month + months;
-            let new_month = new_month_unmodded % 12;
-            let new_year = current_reset_date.year() + (new_month_unmodded / 12) as i32;
-            NaiveDate::from_ymd(new_year, new_month, current_reset_date.day())
+        WEEKS => {
+            TaskInterval::Weeks{every: qt.every as u32, weekday: qt.by_when as u32}
         },
+        MONTHS => {
+            TaskInterval::Months{every: qt.every as u32, day_of_month: qt.by_when as u32}
+        },
+        _ => {
+            panic!(format!("Could not create a task interval for {}", qt.time_unit))
+        }
+    };
+
+    Task {
+        id: qt.id,
+        name: qt.name.clone(),
+        description: qt.description.clone(),
+        bspts: qt.bspts,
+        is_done: qt.is_done,
+        next_reset: qt.next_reset,
+        frequency,
     }
 }
 
@@ -47,31 +77,40 @@ fn calc_next_reset(current_reset_date: NaiveDate, frequency: TaskInterval) -> Na
 pub fn get_tasks(conn: PgPooledConnection) -> Vec<Task> {
     use crate::schema::tasks::dsl::*;
 
-    let model_tasks = tasks.limit(5).load::<models::Task>(&conn).expect("Error loading posts");
-    model_tasks.iter().map(convert_model_task_to_transport_task).collect()
+    let qtasks = tasks.limit(5).load::<models::QFullTask>(&conn).expect("Error loading posts");
+    qtasks.iter().map(query_task_to_task).collect()
 }
 
 /// Add a new task to the database
 pub fn commit_new_task(new_task: NewTask, conn: PgPooledConnection) -> Task {
     use crate::schema::tasks;
 
-    // First add the required fields to save the task
-    let frequency = match new_task.frequency {
-        TaskInterval::Days(days) => PgInterval::from_days(days as i32),
-        TaskInterval::Months(months) => PgInterval::from_months(months as i32),
+    let next_reset = calc_next_reset(&new_task.frequency);
+    let (time_unit, every, by_when) = match new_task.frequency {
+        TaskInterval::Days{every} => {
+            (DAYS, every as i32, 0)
+        },
+        TaskInterval::Weeks{every, weekday} => {
+            (WEEKS, every as i32, weekday as i32)
+        },
+        TaskInterval::Months{every, day_of_month} => {
+            (MONTHS, every as i32, day_of_month as i32)
+        }
     };
-    let today = Local::today().naive_local();
-    let next_reset = calc_next_reset(today, new_task.frequency);
-    let full_task = models::NewTask {
+    let full_task = models::InsertableTask {
         name: &new_task.name,
         description: &new_task.description,
         bspts: new_task.bspts,
         next_reset,
-        frequency,
+        every,
+        time_unit,
+        by_when,
     };
-    let committed_task: models::Task = diesel::insert_into(tasks::table)
-        .values(&full_task)
+    
+    let committed_task: models::QFullTask = diesel::insert_into(tasks::table)
+        .values(full_task)
         .get_result(&conn)
         .expect("Error saving new post");
-    convert_model_task_to_transport_task(&committed_task)
+
+    query_task_to_task(&committed_task)
 }
