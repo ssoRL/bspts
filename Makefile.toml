@@ -18,6 +18,7 @@ watch = { watch = ["frontend"] }
 [tasks.run]
 command = "cargo"
 args = ["run", "-p", "backend"]
+watch = { watch = ["backend"] }
 
 [tasks.test-db]
 script = [

@@ -8,7 +8,7 @@ pub struct NewTask {
     pub name: String,
     pub description: String,
     pub bspts: i32,
-    pub frequency: TaskInterval,
+    pub frequency: TaskInterval, 
 }
 
 /// The interval at which this task should be completed
