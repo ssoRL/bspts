@@ -18,21 +18,20 @@ fn calc_next_reset(frequency: &TaskInterval) -> NaiveDate {
         },
         TaskInterval::Weeks{every, weekday} => {
             let current_day_of_week = today.weekday().num_days_from_monday();
-            // How many days until the next time weekday "by" is the day of the week
-            let days_to_jump = weekday - current_day_of_week;
-            // If this is a negative number add 7 days (skip ahead to the next week)
-            let positive_days_to_jump = if days_to_jump < 0 {
-                days_to_jump + 7
+            let days_to_jump: u32 = if *weekday > current_day_of_week {
+                // The day this task must be done by is later this week
+                weekday - current_day_of_week
+            } else {
+                // This day is on the following week
+                (weekday + 7) - current_day_of_week
+            };
+            // Add on enough weeks to compensate for the every x weeks param
+            let days_to_jump_plus_weeks = if *every > 1 {
+                days_to_jump + (7 * every)
             } else {
                 days_to_jump
             };
-            // Add on enough weeks to compensate for the every x weeks param
-            let positive_days_to_jump_plus_weeks = if *every > 1 {
-                positive_days_to_jump + (7 * every)
-            } else {
-                positive_days_to_jump
-            };
-            let duration = Duration::days(positive_days_to_jump_plus_weeks.into());
+            let duration = Duration::days(days_to_jump_plus_weeks as i64);
             today.checked_add_signed(duration).unwrap()
         },
         TaskInterval::Months{every, day_of_month} => {

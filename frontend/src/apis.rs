@@ -19,6 +19,6 @@ pub fn commit_new_task(new_task: NewTask, callback: FetchCallback<Task>) -> Fetc
     let post_new_task = Request::post("/task")
         .header("Content-Type", "application/json")
         .body(Json(&new_task))
-        .unwrap();
+        .unwrap(); 
     FetchService::fetch(post_new_task, callback).unwrap()
 }

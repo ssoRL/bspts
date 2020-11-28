@@ -2,13 +2,12 @@
 extern crate diesel;
 extern crate dotenv;
 extern crate chrono;
-//extern crate data;
 
 mod query;
 mod models;
 mod schema;
 
-use actix_web::{get, post, web, App, HttpResponse, HttpServer, Responder};
+use actix_web::{get, post, web, App, HttpServer};
 use actix_files as fs;
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use data::task::*;
@@ -28,13 +27,6 @@ fn get_connection_pool() -> PgPool {
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     Pool::builder().build(manager).expect("Failed to create pool.")
 }
-
-// fn with_db(pool: PgPool) -> impl Filter<Extract = (PgPooledConnection,), Error = std::convert::Infallible> + Clone {
-//     warp::any().map(move || {
-//         let conn = pool.get().expect("Failed to get connection from pool");
-//         conn
-//     })
-// }
 
 #[get("/task")]
 async fn task_route(database: web::Data<PgPool>) -> web::Json<Vec<Task>> {
@@ -63,7 +55,7 @@ async fn main() -> std::io::Result<()> {
             .data(pool.clone())
             .service(task_route)
             .service(commit_new_task_route)
-            .service(fs::Files::new("/", "../site").index_file("../site/index.html"))
+            .service(fs::Files::new("/", "./site").index_file("index.html"))
     })
     .bind("127.0.0.1:3030")?
     .run()

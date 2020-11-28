@@ -1,8 +1,0 @@
-[tasks.build]
-command = "wasm-pack"
-args = ["build", "--dev", "--target", "web", "--out-name", "bspts", "--out-dir", "../site/scripts"]
-watch = { ignore_pattern = "../site/scripts/*" }
-
-[tasks.serve]
-command = "simple-http-server"
-args = ["-i", "../site/", "-p", "3000", "--nocache", "--try-file", "../site/index.html"]

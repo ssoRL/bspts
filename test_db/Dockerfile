@@ -1,0 +1,4 @@
+FROM postgres
+ENV POSTGRES_USER=bspts_user
+ENV POSTGRES_PASSWORD=pw
+ENV POSTGRES_DB=bspts_db

@@ -1,0 +1,26 @@
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+
+[config]
+default_to_workspace = false
+
+[tasks.data]
+command = "cargo"
+args = ["build", "-p", "data"]
+watch = { watch = ["data"] }
+
+[tasks.front]
+cwd = "frontend"
+command = "wasm-pack"
+args = ["build", "--dev", "--target", "web", "--out-name", "bspts", "--out-dir", "../site/scripts"]
+watch = { watch = ["frontend"] }
+
+[tasks.run]
+command = "cargo"
+args = ["run", "-p", "backend"]
+
+[tasks.test-db]
+script = [
+    "docker run --rm -p 5433:5432 -d bspts_test_db",
+    "diesel migration --migration-dir backend/migrations run"
+]
