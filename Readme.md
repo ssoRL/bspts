@@ -59,4 +59,4 @@ This site is based off of [this Tutorial](http://www.sheshbabu.com/posts/rust-wa
 
 The server is implemented with [warp](https://github.com/seanmonstar/warp)
 
-An [ineresting blog post](https://medium.com/@saschagrunert/a-web-application-completely-in-rust-6f6bdb6c4471) from a man who's done something similar to what my end goal is.
+An [ineresting blog post](https://medium.com/@saschagrunert/a-web-application-completely-in-rust-6f6bdb6c4471) from a man who's done something similar to what my end goal is. See the latest on [github](https://github.com/saschagrunert/webapp.rs/tree/master)
