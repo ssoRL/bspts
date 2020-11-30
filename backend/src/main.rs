@@ -11,7 +11,9 @@ use actix_web::{get, post, web, App, HttpServer};
 use actix_files as fs;
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use data::task::*;
+use data::user::*;
 use crate::query::task::*;
+use crate::query::user::*;
 use diesel::pg::PgConnection;
 use dotenv::dotenv;
 use std::env;
@@ -26,6 +28,16 @@ fn get_connection_pool() -> PgPool {
         .expect("DATABASE_URL must be set");
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     Pool::builder().build(manager).expect("Failed to create pool.")
+}
+
+#[post("/user")]
+async fn login_route(payload: web::Json<NewUser>, database: web::Data<PgPool>) -> web::Json<String> {
+    let pool = database.get_ref().clone();
+    let conn = pool.get().expect("Failed to get database connection");
+    let web::Json(new_user) = payload;
+    let user = save_new_user(new_user, conn);
+    let token = user_to_token(user);
+    web::Json(token)
 }
 
 #[get("/task")]
@@ -55,6 +67,7 @@ async fn main() -> std::io::Result<()> {
             .data(pool.clone())
             .service(task_route)
             .service(commit_new_task_route)
+            .service(login_route)
             .service(fs::Files::new("/", "./site").index_file("index.html"))
     })
     .bind("127.0.0.1:3030")?

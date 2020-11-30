@@ -1,8 +1,9 @@
 BASICS:
 documentation
 docker???
-login (bearer token in storage?)
 logging
+fetch macro to reduce boilerplate of adding jwt
+the salt and jwt encoding secret should really not be in the codebase
 chron jobs to mark done
 send reminder emails
 yew tests (Might have to do some original work here X_X)

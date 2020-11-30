@@ -97,6 +97,7 @@ pub fn commit_new_task(new_task: NewTask, conn: PgPooledConnection) -> Task {
         }
     };
     let full_task = models::InsertableTask {
+        user_id: 0,
         name: &new_task.name,
         description: &new_task.description,
         bspts: new_task.bspts,

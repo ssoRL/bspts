@@ -9,5 +9,21 @@ table! {
         every -> Int4,
         time_unit -> Text,
         by_when -> Int4,
+        user_id -> Int4,
     }
 }
+
+table! {
+    users (id) {
+        id -> Int4,
+        uname -> Text,
+        password -> Bytea,
+    }
+}
+
+joinable!(tasks -> users (user_id));
+
+allow_tables_to_appear_in_same_query!(
+    tasks,
+    users,
+);

@@ -1,11 +1,15 @@
 use yew::prelude::*;
 use data::task::{Task};
-use crate::apis::{get_tasks, FetchResponse, BsptsFetchError};
+use crate::apis::{get_tasks, FetchResponse};
 use crate::components::{TaskItem, TaskEditor, Popup};
 use yew::format::{Json};
 use yew::services::fetch::{FetchTask};
 use yew::services::console::{ConsoleService};
-use yew_router::prelude::*;
+
+#[derive(Properties, Clone)]
+pub struct Props {
+    pub jwt: String,
+}
 
 struct State {
     tasks_option: Option<Vec<Task>>,
@@ -17,6 +21,7 @@ pub struct Home {
     state: State,
     link: ComponentLink<Self>,
     fetch_tasks: Option<FetchTask>,
+    props: Props,
 }
 
 pub enum Msg {
@@ -31,9 +36,9 @@ pub enum Msg {
 
 impl Component for Home {
     type Message = Msg;
-    type Properties = ();
+    type Properties = Props;
 
-    fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
+    fn create(properties: Self::Properties, link: ComponentLink<Self>) -> Self {
         ConsoleService::info("Getting tasks");
 
         // Get the ball rolling on getting the tasks
@@ -46,7 +51,8 @@ impl Component for Home {
                 error_message: None
             },
             link,
-            fetch_tasks: None
+            fetch_tasks: None,
+            props: properties,
         }
     }
 
@@ -62,24 +68,9 @@ impl Component for Home {
                         Msg::ShowError("Failed to deserialize tasks".to_string())
                     }
                 });
-                let fetch_result = get_tasks(callback);
-                match fetch_result {
-                    Ok(fetch_task) => {
-                        // Save the fetch task in the component so it's not canceled by yew
-                        self.fetch_tasks = Some(fetch_task);
-                        false
-                    },
-                    Err(e) => {
-                        match e {
-                            _ => {
-                                let mut route_service = RouteService::new();
-                                let state: Vec<String> = route_service.get_route().state;
-                                route_service.set_route("/#login", state);
-                            }
-                        };
-                        false
-                    },
-                }
+                let fetch_task = get_tasks(callback, &self.props.jwt);
+                self.fetch_tasks = Some(fetch_task);
+                false
             },
             // The message to handle the fetch of tasks coming back
             Msg::RecieveTasks(tasks) => {
@@ -153,7 +144,7 @@ impl Component for Home {
             let on_cancel = self.link.callback(|_| {Msg::CancelCreateTask});
             html! {
                 <Popup>
-                    <TaskEditor task_to_edit={None} on_create={on_create} on_cancel={on_cancel} />
+                    <TaskEditor task_to_edit={None} on_create={on_create} on_cancel={on_cancel} jwt={self.props.jwt.clone()} />
                 </Popup>
             }
         } else {

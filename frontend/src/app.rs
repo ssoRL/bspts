@@ -46,7 +46,7 @@ impl Component for App {
             },
             Some(jwt) => {
                 // If authed, always go home for now
-                html! {<Home/>}
+                html! {<Home jwt={jwt} />}
             }
         });
 

@@ -17,6 +17,7 @@ pub struct Props {
     pub task_to_edit: Option<Task>,
     pub on_create: Callback<Task>,
     pub on_cancel: Callback<()>,
+    pub jwt: String,
 }
 
 pub enum Mode {
@@ -41,8 +42,8 @@ impl Component for TaskEditor {
     type Message = Msg;
     type Properties = Props;
 
-    fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
-        let mode = match props.task_to_edit {
+    fn create(properties: Self::Properties, link: ComponentLink<Self>) -> Self {
+        let mode = match properties.task_to_edit {
             None => {
                 Mode::Create(NewTask {
                     name: "".to_string(),
@@ -62,8 +63,9 @@ impl Component for TaskEditor {
             },
             props: Props {
                 task_to_edit: None,
-                on_create: props.on_create,
-                on_cancel: props.on_cancel,
+                on_create: properties.on_create,
+                on_cancel: properties.on_cancel,
+                jwt: properties.jwt,
             },
             link,
             save_task_fetch: None,
@@ -100,7 +102,7 @@ impl Component for TaskEditor {
                                 Msg::CancelEdit
                             }
                         });
-                        self.save_task_fetch = Some(commit_new_task(new_task.clone(), task_committed_callback));
+                        self.save_task_fetch = Some(commit_new_task(new_task.clone(), task_committed_callback, &self.props.jwt));
                     }
                     Mode::Edit(task) => {
                         // TODO: update on the backend, for now just return as-is

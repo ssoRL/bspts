@@ -17,3 +17,5 @@ data = { path = "../data" }
 diesel = { version = "1.4.4", features = ["postgres", "r2d2", "chrono"] }
 dotenv = "0.15.0"
 chrono = "0.4"
+ring = "0.16.18"
+jsonwebtoken = "7.2.0"

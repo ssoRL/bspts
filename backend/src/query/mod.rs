@@ -1,4 +1,4 @@
 pub mod task;
+pub mod user;
 
-pub use task::get_tasks;
-pub use task::commit_new_task;
+pub use task::{get_tasks, commit_new_task};
