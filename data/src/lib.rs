@@ -1,5 +1,6 @@
 extern crate chrono;
 
+pub mod user;
 pub mod task;
 
 #[cfg(test)]

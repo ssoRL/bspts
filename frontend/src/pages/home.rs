@@ -1,10 +1,11 @@
 use yew::prelude::*;
 use data::task::{Task};
-use crate::apis::{get_tasks, commit_new_task, FetchResponse};
+use crate::apis::{get_tasks, FetchResponse, BsptsFetchError};
 use crate::components::{TaskItem, TaskEditor, Popup};
 use yew::format::{Json};
 use yew::services::fetch::{FetchTask};
 use yew::services::console::{ConsoleService};
+use yew_router::prelude::*;
 
 struct State {
     tasks_option: Option<Vec<Task>>,
@@ -53,17 +54,32 @@ impl Component for Home {
         match message {
             // Fetch the tasks that the user has saved
             Msg::FetchTasks => {
-                let fetch_tasks_task = get_tasks(self.link.callback(|response: FetchResponse<Vec<Task>>| {
+                let callback = self.link.callback(|response: FetchResponse<Vec<Task>>| {
                     if let (_, Json(Ok(tasks))) = response.into_parts() {
                         Msg::RecieveTasks(tasks)
                     } else {
                         // TODO: show an error in this case
                         Msg::ShowError("Failed to deserialize tasks".to_string())
                     }
-                }));
-                // Save the fetch task in the component so it's not canceled by yew
-                self.fetch_tasks = Some(fetch_tasks_task);
-                false
+                });
+                let fetch_result = get_tasks(callback);
+                match fetch_result {
+                    Ok(fetch_task) => {
+                        // Save the fetch task in the component so it's not canceled by yew
+                        self.fetch_tasks = Some(fetch_task);
+                        false
+                    },
+                    Err(e) => {
+                        match e {
+                            _ => {
+                                let mut route_service = RouteService::new();
+                                let state: Vec<String> = route_service.get_route().state;
+                                route_service.set_route("/#login", state);
+                            }
+                        };
+                        false
+                    },
+                }
             },
             // The message to handle the fetch of tasks coming back
             Msg::RecieveTasks(tasks) => {
@@ -89,7 +105,7 @@ impl Component for Home {
                 self.state.edit_popup = false;
                 true
             },
-            Msg::MarkTaskCompleted(task_id) => {
+            Msg::MarkTaskCompleted(_task_id) => {
                 // Don't do anything here atm
                 false
             },
