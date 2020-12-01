@@ -7,7 +7,7 @@ mod query;
 mod models;
 mod schema;
 
-use actix_web::{get, post, web, App, HttpServer};
+use actix_web::{get, error, http::StatusCode, post, web::{Data, HttpRequest, Json}, App, HttpServer};
 use actix_files as fs;
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use data::task::*;
@@ -17,11 +17,12 @@ use crate::query::user::*;
 use diesel::pg::PgConnection;
 use dotenv::dotenv;
 use std::env;
+use jsonwebtoken;
 
 pub type PgPool = Pool<ConnectionManager<PgConnection>>;
 pub type PgPooledConnection = PooledConnection<ConnectionManager<PgConnection>>;
 
-type Rsp<T> = actix_web::Result<web::Json<T>>;
+type Rsp<T> = actix_web::Result<Json<T>>;
 
 fn get_connection_pool() -> PgPool {
     dotenv().ok();
@@ -32,46 +33,80 @@ fn get_connection_pool() -> PgPool {
     Pool::builder().build(manager).expect("Failed to create pool.")
 }
 
+/// Runs the provided function with a jwt from the headers, or else throws an error
+fn with_auth<T, F: FnOnce(Claim) -> Rsp<T>>(req: HttpRequest, run: F) -> Rsp<T> {
+    let headers = req.headers();
+    let auth_header = headers.get("auth");
+    match auth_header {
+        Some(jwt_header) => {
+            let jwt = jwt_header.to_str().expect("Could not deserialize jwt from auth header");
+            println!("Got jwt {}", jwt);
+            let decoder = jsonwebtoken::DecodingKey::from_secret(JWT_SECRET);
+            let val = jsonwebtoken::Validation::default();
+            let decoded_token_result = jsonwebtoken::decode::<Claim>(jwt, &decoder, &val);
+            match decoded_token_result {
+                Ok(decoded_token) =>  {
+                    let user = decoded_token.claims;
+                    println!("Accessing as user {}", &user.sub);
+                    run(user)
+                }
+                Err(e) => {
+                    let msg = format!("Invalid token to access {} because {}", req.uri(), e);
+                    let error = error::InternalError::new(msg, StatusCode::UNAUTHORIZED);
+                    Err(error.into())
+                }
+            }
+        }
+        None => {
+            let msg = format!("Token required to access {}", req.uri());
+            let error = error::InternalError::new(msg, StatusCode::UNAUTHORIZED);
+            Err(error.into())
+        }
+    }
+}
+
 #[post("/login")]
-async fn signin_route(payload: web::Json<NewUser>, database: web::Data<PgPool>) -> Rsp<String>  {
+async fn sign_in_route(payload: Json<NewUser>, database: Data<PgPool>) -> Rsp<String>  {
     let pool = database.get_ref().clone();
     let conn = pool.get().expect("Failed to get database connection");
-    let web::Json(new_user) = payload;
+    let Json(new_user) = payload;
     let user_result = login_user(new_user, conn);
     match user_result {
         Ok(user) => {
             let token = user_to_token(user);
-            Ok(web::Json(token))
+            Ok(Json(token))
         },
         Err(e) => Err(e)
     }
 }
 
 #[post("/user")]
-async fn signup_route(payload: web::Json<NewUser>, database: web::Data<PgPool>) -> web::Json<String> {
+async fn sign_up_route(payload: Json<NewUser>, database: Data<PgPool>) -> Json<String> {
     let pool = database.get_ref().clone();
     let conn = pool.get().expect("Failed to get database connection");
-    let web::Json(new_user) = payload;
+    let Json(new_user) = payload;
     let user = save_new_user(new_user, conn);
     let token = user_to_token(user);
-    web::Json(token)
+    Json(token)
 }
 
 #[get("/task")]
-async fn task_route(database: web::Data<PgPool>) -> web::Json<Vec<Task>> {
-    let pool = database.get_ref().clone();
-    let conn = pool.get().expect("Failed to get database connection");
-    let tasks = get_tasks(conn);
-    web::Json(tasks)
+async fn task_route(req: HttpRequest,database: Data<PgPool>) -> Rsp<Vec<Task>> {
+    with_auth(req, |user: Claim| {
+        let pool = database.get_ref().clone();
+        let conn = pool.get().expect("Failed to get database connection");
+        let tasks = get_tasks(conn);
+        Ok(Json(tasks))
+    })
 }
 
 #[post("/task")]
-async fn commit_new_task_route(payload: web::Json<NewTask>, database: web::Data<PgPool>) -> web::Json<Task> {
+async fn commit_new_task_route(payload: Json<NewTask>, database: Data<PgPool>) -> Json<Task> {
     let pool = database.get_ref().clone();
     let conn = pool.get().expect("Failed to get database connection");
-    let web::Json(new_task) = payload;
+    let Json(new_task) = payload;
     let committed_task = commit_new_task(new_task, conn);
-    web::Json(committed_task)
+    Json(committed_task)
 }
 
 #[actix_web::main]
@@ -84,8 +119,8 @@ async fn main() -> std::io::Result<()> {
             .data(pool.clone())
             .service(task_route)
             .service(commit_new_task_route)
-            .service(signin_route)
-            .service(signup_route)
+            .service(sign_in_route)
+            .service(sign_up_route)
             .service(fs::Files::new("/", "./site").index_file("index.html"))
     })
     .bind("127.0.0.1:3030")?

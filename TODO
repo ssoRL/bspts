@@ -1,5 +1,4 @@
 BASICS:
-get login working w/ pw
 documentation
 docker???
 logging
@@ -20,4 +19,5 @@ signing out I guess
 
 WRITE-UPS:
 Yew routing bullshit
+Authing with jwt (with_auth function and required exp field)
 Actix error or response findings

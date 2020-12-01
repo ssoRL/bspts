@@ -5,6 +5,8 @@
         "actix",
         "bindgen",
         "bspts",
+        "chrono",
+        "dotenv",
         "jsonwebtoken",
         "maxlength",
         "onclick",
