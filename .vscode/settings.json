@@ -1,9 +1,15 @@
 {
     "cSpell.words": [
+        "HMAC",
+        "Insertable",
+        "actix",
         "bindgen",
         "bspts",
+        "jsonwebtoken",
+        "maxlength",
         "onclick",
         "oninput",
+        "pbkdf",
         "wasm"
     ]
 }

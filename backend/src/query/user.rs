@@ -1,4 +1,4 @@
-use ring::{digest, pbkdf2, rand};
+use ring::{digest, pbkdf2};
 use std::num::NonZeroU32;
 use data::user::*;
 use crate::models;
@@ -12,7 +12,7 @@ static PBKDF2_ALG: pbkdf2::Algorithm = pbkdf2::PBKDF2_HMAC_SHA256;
 const CREDENTIAL_LEN: usize = digest::SHA256_OUTPUT_LEN;
 pub type Credential = [u8; CREDENTIAL_LEN];
 
-// TODO: Maybe this isn't secruity?
+// TODO: Maybe this isn't security?
 const SALT: &str = "dkjfjkfdjfkd";
 const JWT_SECRET: &str = "ewiruhnnisdfkjn";
 
@@ -59,12 +59,12 @@ pub fn login_user(user: NewUser, conn: PgPooledConnection) -> Result<User> {
     use crate::schema::users::dsl::*;
     use diesel::query_dsl::filter_dsl::FilterDsl;
 
-    let qusers: Vec<models::QUser> = users
+    let q_users: Vec<models::QUser> = users
         .filter(uname.eq(user.uname))
         .load::<models::QUser>(&conn)
         .expect("Error getting users");
 
-    match &qusers[..] {
+    match &q_users[..] {
         [] => {
             let error = error::InternalError::new(
                 "There's no user with that username".to_string(),
@@ -72,16 +72,16 @@ pub fn login_user(user: NewUser, conn: PgPooledConnection) -> Result<User> {
             );
             Err(error.into())
         }
-        [quser] =>  {
-            let encrypted_password = encrypt_password(&quser.uname, &user.password);
-            if encrypted_password == quser.password {
+        [q_user] =>  {
+            let encrypted_password = encrypt_password(&q_user.uname, &user.password);
+            if encrypted_password == q_user.password {
                 Ok(User {
-                    id: quser.id,
-                    uname : quser.uname.clone(),
+                    id: q_user.id,
+                    uname : q_user.uname.clone(),
                 })
             } else {
                 let error = error::InternalError::new(
-                    "Inncorrect password".to_string(),
+                    "Incorrect password".to_string(),
                     StatusCode::UNAUTHORIZED
                 );
                 Err(error.into())

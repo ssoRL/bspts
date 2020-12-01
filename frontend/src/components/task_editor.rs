@@ -1,7 +1,7 @@
 use data::task::*;
 use yew::services::console::{ConsoleService};
 use yew::format::{Json};
-use crate::apis::{get_tasks, commit_new_task, FetchResponse};
+use crate::apis::{commit_new_task, FetchResponse};
 use yew::services::fetch::{FetchTask};
 use yew::prelude::*;
 

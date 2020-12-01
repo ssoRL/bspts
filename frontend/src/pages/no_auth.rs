@@ -1,4 +1,3 @@
-use data::task::Task;
 use yew::prelude::*;
 use crate::app;
 use yew_router::components::RouterAnchor;
@@ -11,7 +10,7 @@ impl Component for AuthOptions {
     type Message = ();
     type Properties = ();
 
-    fn create(props: Self::Properties, _link: ComponentLink<Self>) -> Self {
+    fn create(_props: Self::Properties, _link: ComponentLink<Self>) -> Self {
         Self { }
     }
 
