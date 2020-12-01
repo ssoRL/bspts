@@ -1,5 +1,4 @@
 BASICS:
-get login working w/out pw
 get login working w/ pw
 documentation
 docker???
@@ -17,3 +16,8 @@ user table
 check off task
 goodies
 set icons
+signing out I guess
+
+WRITE-UPS:
+Yew routing bullshit
+Actix error or response findings

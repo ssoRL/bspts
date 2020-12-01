@@ -11,7 +11,6 @@ struct State {
     new_user: NewUser,
     saving: bool,
     error_message: Option<String>,
-    //fetched_jwt: Option<String>,
 }
 
 pub struct SignUp {
@@ -89,13 +88,6 @@ impl Component for SignUp {
     }
 
     fn view(&self) -> Html {
-        // if let Some(jwt) = &self.state.fetched_jwt {
-        //     // Once the jwt has been fetched, route to the home page
-        //     // let jwt_clone = jwt.clone();
-        //     // let render_home = Router::render(|_| html! {<Home jwt={jwt_clone} />});
-        //     // return html! {<Router<app::Route, ()> render=render_home/>}
-        // }
-
         let error_message = match &self.state.error_message {
             Some(msg) => {
                 html! {<span>{msg}</span>}

@@ -21,6 +21,8 @@ use std::env;
 pub type PgPool = Pool<ConnectionManager<PgConnection>>;
 pub type PgPooledConnection = PooledConnection<ConnectionManager<PgConnection>>;
 
+type Rsp<T> = actix_web::Result<web::Json<T>>;
+
 fn get_connection_pool() -> PgPool {
     dotenv().ok();
 
@@ -30,8 +32,23 @@ fn get_connection_pool() -> PgPool {
     Pool::builder().build(manager).expect("Failed to create pool.")
 }
 
+#[post("/login")]
+async fn signin_route(payload: web::Json<NewUser>, database: web::Data<PgPool>) -> Rsp<String>  {
+    let pool = database.get_ref().clone();
+    let conn = pool.get().expect("Failed to get database connection");
+    let web::Json(new_user) = payload;
+    let user_result = login_user(new_user, conn);
+    match user_result {
+        Ok(user) => {
+            let token = user_to_token(user);
+            Ok(web::Json(token))
+        },
+        Err(e) => Err(e)
+    }
+}
+
 #[post("/user")]
-async fn login_route(payload: web::Json<NewUser>, database: web::Data<PgPool>) -> web::Json<String> {
+async fn signup_route(payload: web::Json<NewUser>, database: web::Data<PgPool>) -> web::Json<String> {
     let pool = database.get_ref().clone();
     let conn = pool.get().expect("Failed to get database connection");
     let web::Json(new_user) = payload;
@@ -67,7 +84,8 @@ async fn main() -> std::io::Result<()> {
             .data(pool.clone())
             .service(task_route)
             .service(commit_new_task_route)
-            .service(login_route)
+            .service(signin_route)
+            .service(signup_route)
             .service(fs::Files::new("/", "./site").index_file("index.html"))
     })
     .bind("127.0.0.1:3030")?

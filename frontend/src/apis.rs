@@ -31,6 +31,17 @@ pub fn set_jwt(jwt: String)  {
     stor.store("auth-token", Ok(jwt));
 }
 
+/// Sends the user's creds to the backend, which responds with an error, or a jwt
+pub fn signin(user: NewUser, callback: FetchCallback<String>) -> FetchTask  {
+    ConsoleService::log(format!("Sending request for user: {}", &user.uname).as_str());
+    let login = Request::post("/login")
+        .header("Content-Type", "application/json")
+        .body(Json(&user))
+        .expect("Failed to create ");
+    ConsoleService::log("Will Send sign in request");
+    FetchService::fetch(login, callback).expect("Failed to send POST request to /login")
+}
+
 /// Creates a new user account and returns the jwt used to auth the user
 pub fn signup(new_user: NewUser, callback: FetchCallback<String>) -> FetchTask  {
     let post = Request::post("/user")

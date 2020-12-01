@@ -4,7 +4,9 @@ use data::user::*;
 use crate::models;
 use crate::PgPooledConnection;
 use diesel::RunQueryDsl;
+use crate::diesel::ExpressionMethods;
 use jsonwebtoken;
+use actix_web::{error, Result, http::StatusCode};
 
 static PBKDF2_ALG: pbkdf2::Algorithm = pbkdf2::PBKDF2_HMAC_SHA256;
 const CREDENTIAL_LEN: usize = digest::SHA256_OUTPUT_LEN;
@@ -51,6 +53,36 @@ pub fn user_to_token(user: User) -> String {
     );
 
     token.expect("Failed to turn user into token")
+}
+
+pub fn login_user(user: NewUser, conn: PgPooledConnection) -> Result<User> {
+    use crate::schema::users::dsl::*;
+    use diesel::query_dsl::filter_dsl::FilterDsl;
+
+    let encrypted_password = encrypt_password(&user.uname, &user.password);
+        
+    let qusers: Vec<models::QUser> = users
+        .filter(uname.eq(user.uname))
+        .load::<models::QUser>(&conn)
+        .expect("Error getting users");
+
+    match &qusers[..] {
+        [] => {
+            let error = error::InternalError::new("There's no user with that username".to_string(), StatusCode::NOT_FOUND);
+            Err(error.into())
+        }
+        [quser] =>  {
+            Ok(User {
+                id: quser.id,
+                uname : quser.uname.clone(),
+            })
+        },
+        _ => {
+            //Err(BsptsError::BigOof("There's multiple users with that username".to_string()))
+            let error = error::InternalError::new("There's no user with that username".to_string(), StatusCode::CONFLICT);
+            Err(error.into())
+        }
+    }
 }
 
 /// Saves a new user to the database and then returns that users name and id
