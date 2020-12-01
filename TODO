@@ -11,7 +11,6 @@ yew tests (Might have to do some original work here X_X)
 FEATURES:
 delete a task
 edit a task
-user table
 check off task
 goodies
 set icons
@@ -19,5 +18,5 @@ signing out I guess
 
 WRITE-UPS:
 Yew routing bullshit
-Authing with jwt (with_auth function and required exp field)
+Auth with jwt (with_auth function and required exp field)
 Actix error or response findings

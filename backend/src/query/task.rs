@@ -1,5 +1,6 @@
 use diesel::prelude::*;
 use data::task::*;
+use data::user::Claim;
 use chrono::{NaiveDate, Local, Duration, Datelike};
 use crate::PgPooledConnection;
 use crate::models;
@@ -36,10 +37,10 @@ fn calc_next_reset(frequency: &TaskInterval) -> NaiveDate {
         },
         TaskInterval::Months{every, day_of_month} => {
             let current_month = today.month0();
-            let new_month_unmodded = current_month + every;
+            let new_month_no_mod = current_month + every;
             // The month 0 indexed (requires 1 indexed for from_ymd fn)
-            let new_month0 = new_month_unmodded % 12;
-            let new_year = today.year() + (new_month_unmodded / 12) as i32;
+            let new_month0 = new_month_no_mod % 12;
+            let new_year = today.year() + (new_month_no_mod / 12) as i32;
             NaiveDate::from_ymd(new_year, new_month0 + 1, *day_of_month)
         }
     }
@@ -73,15 +74,19 @@ fn query_task_to_task(qt: &models::QFullTask) -> Task {
 }
 
 /// Get all of the tasks for the user
-pub fn get_tasks(conn: PgPooledConnection) -> Vec<Task> {
+pub fn get_tasks(user: Claim, conn: PgPooledConnection) -> Vec<Task> {
     use crate::schema::tasks::dsl::*;
 
-    let qtasks = tasks.limit(5).load::<models::QFullTask>(&conn).expect("Error loading posts");
-    qtasks.iter().map(query_task_to_task).collect()
+    let q_tasks = tasks
+        .filter(user_id.eq(user.id))
+        .limit(5)
+        .load::<models::QFullTask>(&conn)
+        .expect("Error loading posts");
+    q_tasks.iter().map(query_task_to_task).collect()
 }
 
 /// Add a new task to the database
-pub fn commit_new_task(new_task: NewTask, conn: PgPooledConnection) -> Task {
+pub fn commit_new_task(new_task: NewTask, user: Claim, conn: PgPooledConnection) -> Task {
     use crate::schema::tasks;
 
     let next_reset = calc_next_reset(&new_task.frequency);
@@ -97,7 +102,7 @@ pub fn commit_new_task(new_task: NewTask, conn: PgPooledConnection) -> Task {
         }
     };
     let full_task = models::InsertableTask {
-        user_id: 0,
+        user_id: user.id,
         name: &new_task.name,
         description: &new_task.description,
         bspts: new_task.bspts,

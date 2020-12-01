@@ -91,22 +91,24 @@ async fn sign_up_route(payload: Json<NewUser>, database: Data<PgPool>) -> Json<S
 }
 
 #[get("/task")]
-async fn task_route(req: HttpRequest,database: Data<PgPool>) -> Rsp<Vec<Task>> {
+async fn task_route(req: HttpRequest, database: Data<PgPool>) -> Rsp<Vec<Task>> {
     with_auth(req, |user: Claim| {
         let pool = database.get_ref().clone();
         let conn = pool.get().expect("Failed to get database connection");
-        let tasks = get_tasks(conn);
+        let tasks = get_tasks(user, conn);
         Ok(Json(tasks))
     })
 }
 
 #[post("/task")]
-async fn commit_new_task_route(payload: Json<NewTask>, database: Data<PgPool>) -> Json<Task> {
-    let pool = database.get_ref().clone();
-    let conn = pool.get().expect("Failed to get database connection");
-    let Json(new_task) = payload;
-    let committed_task = commit_new_task(new_task, conn);
-    Json(committed_task)
+async fn commit_new_task_route(req: HttpRequest, payload: Json<NewTask>, database: Data<PgPool>) -> Rsp<Task> {
+    with_auth(req, |user: Claim| {
+        let pool = database.get_ref().clone();
+        let conn = pool.get().expect("Failed to get database connection");
+        let Json(new_task) = payload;
+        let committed_task = commit_new_task(new_task, user, conn);
+        Ok(Json(committed_task))
+    })
 }
 
 #[actix_web::main]
