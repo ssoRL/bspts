@@ -2,7 +2,7 @@ use yew::prelude::*;
 use yew::services::fetch::{FetchTask};
 use data::user::*;
 use yew::format::{Json};
-use crate::apis::{set_jwt, signup, FetchResponse};
+use crate::apis::{set_jwt, sign_up, FetchResponse};
 use yew_router::prelude::*;
 use yew_router::agent::RouteRequest::ChangeRoute;
 use crate::app;
@@ -56,7 +56,7 @@ impl Component for SignUp {
                         Msg::TryAgain("There was an issue creating that user".to_string())
                     }
                 });
-                let fetch_task = signup(self.state.new_user.clone(), callback);
+                let fetch_task = sign_up(self.state.new_user.clone(), callback);
                 self.fetch_tasks = Some(fetch_task);
                 self.state.saving = true;
                 true

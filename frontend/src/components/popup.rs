@@ -1,4 +1,3 @@
-use yew::services::console::{ConsoleService};
 use yew::prelude::*;
 
 pub struct Popup {

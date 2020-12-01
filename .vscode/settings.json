@@ -3,6 +3,7 @@
         "bindgen",
         "bspts",
         "onclick",
+        "oninput",
         "wasm"
     ]
 }

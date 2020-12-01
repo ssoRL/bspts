@@ -2,7 +2,7 @@ use yew::prelude::*;
 use yew::services::fetch::{FetchTask};
 use data::user::*;
 use yew::format::{Json};
-use crate::apis::{set_jwt, signin, signup, FetchResponse};
+use crate::apis::{set_jwt, sign_in, FetchResponse};
 use yew_router::prelude::*;
 use yew_router::agent::RouteRequest::ChangeRoute;
 use crate::app;
@@ -56,22 +56,20 @@ impl Component for SignIn {
                         (head, _) if head.status == StatusCode::NOT_FOUND => {
                             Msg::TryAgain("No user was found with that username".to_string())
                         }
+                        (head, _) if head.status == StatusCode::UNAUTHORIZED => {
+                            Msg::TryAgain("Incorrect Password".to_string())
+                        }
                         (_, Json(Ok(jwt))) => {
-                            ConsoleService::log("Got a jwt back");
                             Msg::SaveJwt(jwt)
-                        },
+                        }
                         _ => {
                             Msg::TryAgain("There was some problem, please try again".to_string())
                         }
                     }
                 });
-                ConsoleService::log("Going to log in");
-                let fetch_task = signin(self.state.user.clone(), callback);
-                ConsoleService::log("Going to set fetch");
+                let fetch_task = sign_in(self.state.user.clone(), callback);
                 self.fetch_tasks = Some(fetch_task);
-                ConsoleService::log("Going to set saving true");
                 self.state.saving = true;
-                ConsoleService::log("Going to render");
                 true
             },
             Msg::SaveJwt(jwt) => {

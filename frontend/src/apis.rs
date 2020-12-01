@@ -4,7 +4,6 @@ use yew::format::{Json, Nothing};
 use yew::services::{
     storage::{StorageService, Area},
     fetch::{FetchService, FetchTask, Request, Response},
-    ConsoleService
 };
 use data::task::*;
 use data::user::*;
@@ -26,24 +25,21 @@ pub fn get_jwt() -> Option<String>  {
 }
 
 pub fn set_jwt(jwt: String)  {
-    ConsoleService::log(format!("Saving: {}", &jwt).as_str());
     let mut stor = StorageService::new(Area::Local).expect("Could not connect to the local storage");
     stor.store("auth-token", Ok(jwt));
 }
 
 /// Sends the user's creds to the backend, which responds with an error, or a jwt
-pub fn signin(user: NewUser, callback: FetchCallback<String>) -> FetchTask  {
-    ConsoleService::log(format!("Sending request for user: {}", &user.uname).as_str());
+pub fn sign_in(user: NewUser, callback: FetchCallback<String>) -> FetchTask  {
     let login = Request::post("/login")
         .header("Content-Type", "application/json")
         .body(Json(&user))
         .expect("Failed to create ");
-    ConsoleService::log("Will Send sign in request");
     FetchService::fetch(login, callback).expect("Failed to send POST request to /login")
 }
 
 /// Creates a new user account and returns the jwt used to auth the user
-pub fn signup(new_user: NewUser, callback: FetchCallback<String>) -> FetchTask  {
+pub fn sign_up(new_user: NewUser, callback: FetchCallback<String>) -> FetchTask  {
     let post = Request::post("/user")
         .header("Content-Type", "application/json")
         .body(Json(&new_user))

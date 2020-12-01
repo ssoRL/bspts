@@ -59,8 +59,6 @@ pub fn login_user(user: NewUser, conn: PgPooledConnection) -> Result<User> {
     use crate::schema::users::dsl::*;
     use diesel::query_dsl::filter_dsl::FilterDsl;
 
-    let encrypted_password = encrypt_password(&user.uname, &user.password);
-        
     let qusers: Vec<models::QUser> = users
         .filter(uname.eq(user.uname))
         .load::<models::QUser>(&conn)
@@ -68,18 +66,32 @@ pub fn login_user(user: NewUser, conn: PgPooledConnection) -> Result<User> {
 
     match &qusers[..] {
         [] => {
-            let error = error::InternalError::new("There's no user with that username".to_string(), StatusCode::NOT_FOUND);
+            let error = error::InternalError::new(
+                "There's no user with that username".to_string(),
+                StatusCode::NOT_FOUND
+            );
             Err(error.into())
         }
         [quser] =>  {
-            Ok(User {
-                id: quser.id,
-                uname : quser.uname.clone(),
-            })
+            let encrypted_password = encrypt_password(&quser.uname, &user.password);
+            if encrypted_password == quser.password {
+                Ok(User {
+                    id: quser.id,
+                    uname : quser.uname.clone(),
+                })
+            } else {
+                let error = error::InternalError::new(
+                    "Inncorrect password".to_string(),
+                    StatusCode::UNAUTHORIZED
+                );
+                Err(error.into())
+            }
         },
         _ => {
-            //Err(BsptsError::BigOof("There's multiple users with that username".to_string()))
-            let error = error::InternalError::new("There's no user with that username".to_string(), StatusCode::CONFLICT);
+            let error = error::InternalError::new(
+                "There's no user with that username".to_string(),
+                StatusCode::CONFLICT
+            );
             Err(error.into())
         }
     }
