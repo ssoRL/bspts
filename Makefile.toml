@@ -21,4 +21,7 @@ args = ["run", "-p", "backend"]
 watch = { watch = ["backend"] }
 
 [tasks.test-db]
-script = "docker run --rm -p 5433:5432 -d bspts_test_db"
+script = "docker run --rm --name bspts_db_container -p 5433:5432 -d bspts_test_db"
+
+[tasks.stop-db]
+script = "docker stop bspts_db_container"
