@@ -13,6 +13,7 @@
         "onclick",
         "oninput",
         "pbkdf",
+        "postgres",
         "wasm"
     ]
 }

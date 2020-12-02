@@ -2,6 +2,8 @@
 extern crate diesel;
 extern crate dotenv;
 extern crate chrono;
+#[macro_use]
+extern crate diesel_migrations;
 
 mod query;
 mod models;
@@ -24,13 +26,21 @@ pub type PgPooledConnection = PooledConnection<ConnectionManager<PgConnection>>;
 
 type Rsp<T> = actix_web::Result<Json<T>>;
 
+embed_migrations!("./migrations");
+
 fn get_connection_pool() -> PgPool {
     dotenv().ok();
 
     let database_url = env::var("DATABASE_URL")
         .expect("DATABASE_URL must be set");
     let manager = ConnectionManager::<PgConnection>::new(database_url);
-    Pool::builder().build(manager).expect("Failed to create pool.")
+    let pool = Pool::builder().build(manager).expect("Failed to create pool.");
+    let conn = pool.get().expect("Could not get connection");
+    match  embedded_migrations::run(&conn) {
+        Ok(_) => println!("Migration completed successfully"),
+        Err(e) => println!("Could not complete migration because {}", e),
+    }
+    pool
 }
 
 /// Runs the provided function with a jwt from the headers, or else throws an error
@@ -40,14 +50,14 @@ fn with_auth<T, F: FnOnce(Claim) -> Rsp<T>>(req: HttpRequest, run: F) -> Rsp<T> 
     match auth_header {
         Some(jwt_header) => {
             let jwt = jwt_header.to_str().expect("Could not deserialize jwt from auth header");
-            println!("Got jwt {}", jwt);
-            let decoder = jsonwebtoken::DecodingKey::from_secret(JWT_SECRET);
-            let val = jsonwebtoken::Validation::default();
-            let decoded_token_result = jsonwebtoken::decode::<Claim>(jwt, &decoder, &val);
+            let decoded_token_result = jsonwebtoken::decode::<Claim>(
+                jwt,
+                &jsonwebtoken::DecodingKey::from_secret(JWT_SECRET),
+                &jsonwebtoken::Validation::default()
+            );
             match decoded_token_result {
                 Ok(decoded_token) =>  {
                     let user = decoded_token.claims;
-                    println!("Accessing as user {}", &user.sub);
                     run(user)
                 }
                 Err(e) => {
