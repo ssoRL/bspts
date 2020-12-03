@@ -10,9 +10,8 @@ args = ["build", "-p", "data"]
 watch = { watch = ["data"] }
 
 [tasks.front]
-cwd = "frontend"
 command = "wasm-pack"
-args = ["build", "--dev", "--target", "web", "--out-name", "bspts", "--out-dir", "../site/scripts"]
+args = ["build", "frontend", "--dev", "--target", "web", "--out-name", "bspts", "--out-dir", "../site/scripts"]
 watch = { watch = ["frontend"] }
 
 [tasks.run]
@@ -21,7 +20,17 @@ args = ["run", "-p", "backend"]
 watch = { watch = ["backend"] }
 
 [tasks.test-db]
-script = "docker run --rm --name bspts_db_container -p 5433:5432 -d bspts_test_db"
+script = """
+    docker run --rm \
+    --name bspts_db_container \
+    -e POSTGRES_DB=bspts_db \
+    -e POSTGRES_PASSWORD=pw \
+    -p 5433:5432 \
+    -d postgres
+"""
 
 [tasks.stop-db]
 script = "docker stop bspts_db_container"
+
+[tasks.build-app]
+script = "docker build . -t bspts-app"

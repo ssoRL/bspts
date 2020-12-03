@@ -1,6 +1,5 @@
 BASICS:
 documentation
-docker???
 logging
 fetch macro to reduce boilerplate of adding jwt
 the salt and jwt encoding secret should really not be in the codebase

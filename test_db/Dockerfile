@@ -1,3 +1,0 @@
-FROM postgres
-ENV POSTGRES_PASSWORD=pw
-ENV POSTGRES_DB=bspts_db

@@ -29,10 +29,7 @@ type Rsp<T> = actix_web::Result<Json<T>>;
 embed_migrations!("./migrations");
 
 fn get_connection_pool() -> PgPool {
-    dotenv().ok();
-
-    let database_url = env::var("DATABASE_URL")
-        .expect("DATABASE_URL must be set");
+    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     let pool = Pool::builder().build(manager).expect("Failed to create pool.");
     let conn = pool.get().expect("Could not get connection");
@@ -123,9 +120,11 @@ async fn commit_new_task_route(req: HttpRequest, payload: Json<NewTask>, databas
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    dotenv().ok();
 
     let pool = get_connection_pool();
 
+    let api_url = env::var("API_URL").expect("API_URL must be set");
     HttpServer::new(move || {
         App::new()
             .data(pool.clone())
@@ -135,7 +134,7 @@ async fn main() -> std::io::Result<()> {
             .service(sign_up_route)
             .service(fs::Files::new("/", "./site").index_file("index.html"))
     })
-    .bind("127.0.0.1:3030")?
+    .bind(api_url)?
     .run()
     .await
 }

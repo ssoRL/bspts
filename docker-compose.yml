@@ -1,0 +1,11 @@
+version: "3.8"
+services:
+  web:
+    image: bspts-app
+    ports:
+      - "3030:3030"
+  db:
+    image: postgres
+    environment: 
+      - POSTGRES_DB=bspts_db
+      - POSTGRES_PASSWORD=pw
