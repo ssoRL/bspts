@@ -18,6 +18,7 @@ table! {
         id -> Int4,
         uname -> Text,
         password -> Bytea,
+        salt -> Bytea,
     }
 }
 

@@ -1,8 +1,10 @@
 BASICS:
-documentation
+JWT encryption
+certs and tls
 logging
+db backups
+documentation
 fetch macro to reduce boilerplate of adding jwt
-the salt and jwt encoding secret should really not be in the codebase
 chron jobs to mark done
 send reminder emails
 yew tests (Might have to do some original work here X_X)
@@ -19,3 +21,10 @@ WRITE-UPS:
 Yew routing bullshit
 Auth with jwt (with_auth function and required exp field)
 Actix error or response findings
+Docker how-to maybe?
+Security everything
+    https://auth0.com/blog/adding-salt-to-hashing-a-better-way-to-store-passwords/
+    https://blog.logrocket.com/jwt-authentication-best-practices/
+    vulnerable to XSS but not using many third parties
+    https://security.stackexchange.com/questions/95972/what-are-requirements-for-hmac-secret-key
+    http://fileformats.archiveteam.org/wiki/PEM_encoded_RSA_private_key

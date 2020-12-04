@@ -1,4 +1,5 @@
 use ring::{digest, pbkdf2};
+use rand_core::{RngCore, OsRng};
 use std::num::NonZeroU32;
 use data::user::*;
 use crate::models;
@@ -14,26 +15,13 @@ const CREDENTIAL_LEN: usize = digest::SHA256_OUTPUT_LEN;
 pub type Credential = [u8; CREDENTIAL_LEN];
 
 // TODO: Maybe this isn't security?
-const SALT: &str = "dkjfjkfdjfkd";
 pub const JWT_SECRET: &[u8] = b"ewiruhnnisdfkjn";
 
-// The salt should have a user-specific component so that an attacker
-// cannot crack one password for multiple users in the database. It
-// should have a database-unique component so that an attacker cannot
-// crack the same user's password across databases in the unfortunate
-// but common case that the user has used the same password for
-// multiple systems.
-fn salt(username: &str) -> Vec<u8> {
-    let salt_bytes = SALT.as_bytes();
-    let uname_bytes = username.as_bytes();
-    let mut salt = Vec::with_capacity(salt_bytes.len() + uname_bytes.len());
-    salt.extend(salt_bytes);
-    salt.extend(uname_bytes);
-    salt
-}
-
-fn encrypt_password(username: &str, password: &str) -> Vec<u8> {
-    let salt = salt(username);
+/// Takes a user name and password and returns the hashed pw and a random salt
+fn generate_creds(password: &str) -> (Vec<u8>, Vec<u8>) {
+    // Generate a salt for this user
+    let mut salt = [0u8, 16];
+    OsRng.fill_bytes(&mut salt);
     let mut encrypted_password: Credential = [0u8; CREDENTIAL_LEN];
     pbkdf2::derive(
         PBKDF2_ALG,
@@ -42,7 +30,21 @@ fn encrypt_password(username: &str, password: &str) -> Vec<u8> {
         password.as_bytes(),
         &mut encrypted_password
     );
-    encrypted_password.to_vec()
+    (encrypted_password.to_vec(), salt.to_vec())
+}
+
+/// checks that a given password is valid for a given user
+fn check_password(password: &str, user: &models::QUser) -> bool {
+    let stored_hash: &Vec<u8> = &user.password;
+    let mut generated_hash: Credential = [0u8; CREDENTIAL_LEN];
+    pbkdf2::derive(
+        PBKDF2_ALG,
+        NonZeroU32::new(100_000).unwrap(),
+        &user.salt,
+        password.as_bytes(),
+        &mut generated_hash
+    );
+    stored_hash == &generated_hash.to_vec()
 }
 
 /// Converts a user to a jwt string that can be used in the future
@@ -60,6 +62,8 @@ pub fn user_to_token(user: models::QUser) -> String {
         &claim,
         &jsonwebtoken::EncodingKey::from_secret(JWT_SECRET)
     );
+
+    // &jsonwebtoken::EncodingKey::from_rsa_pem(key: &[u8]);
 
     token.expect("Failed to turn user into token")
 }
@@ -82,8 +86,7 @@ pub fn login_user(user: NewUser, conn: PgPooledConnection) -> Result<models::QUs
             Err(error.into())
         }
         [q_user] =>  {
-            let encrypted_password = encrypt_password(&q_user.uname, &user.password);
-            if encrypted_password == q_user.password {
+            if check_password(&user.password, q_user) {
                 Ok(q_user.clone())
             } else {
                 let error = error::InternalError::new(
@@ -107,10 +110,11 @@ pub fn login_user(user: NewUser, conn: PgPooledConnection) -> Result<models::QUs
 pub fn save_new_user(user: NewUser, conn: PgPooledConnection) -> models::QUser {
     use crate::schema::users;
 
-    let encrypted_password = encrypt_password(&user.uname, &user.password);
+    let creds = generate_creds(&user.password);
     let insert = models::InsertableUser {
         uname: &user.uname,
-        password: encrypted_password,
+        password: creds.0,
+        salt: creds.1
     };
     
     diesel::insert_into(users::table)

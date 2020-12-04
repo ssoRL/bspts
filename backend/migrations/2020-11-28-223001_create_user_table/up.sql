@@ -3,7 +3,8 @@
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
   uname TEXT NOT NULL UNIQUE,
-  password BYTEA NOT NULL
+  password BYTEA NOT NULL,
+  salt BYTEA NOT NULL
 );
 
 ALTER TABLE tasks ADD COLUMN user_id INT NOT NULL;

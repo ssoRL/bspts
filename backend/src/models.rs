@@ -34,6 +34,7 @@ pub struct QUser {
     pub id: i32,
     pub uname: String,
     pub password: Vec<u8>,
+    pub salt: Vec<u8>,
 }
 
 #[derive(Insertable)]
@@ -41,4 +42,5 @@ pub struct QUser {
 pub struct InsertableUser<'a> {
     pub uname: &'a str,
     pub password: Vec<u8>,
+    pub salt: Vec<u8>,
 }
