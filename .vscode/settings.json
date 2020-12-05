@@ -3,6 +3,7 @@
         "Datelike",
         "HMAC",
         "Insertable",
+        "Queryable",
         "actix",
         "bindgen",
         "bspts",

@@ -2,7 +2,7 @@ use yew::prelude::*;
 use yew::services::fetch::{FetchTask};
 use data::user::*;
 use yew::format::{Json};
-use crate::apis::{set_jwt, sign_up, FetchResponse};
+use crate::apis::{set_user_name, sign_up, FetchResponse};
 use yew_router::prelude::*;
 use yew_router::agent::RouteRequest::ChangeRoute;
 use crate::app;
@@ -21,7 +21,7 @@ pub struct SignUp {
 
 pub enum Msg {
     CreateNewUser,
-    SaveJwt(String),
+    SaveUserName(String),
     TryAgain(String),
     UpdateUname(String),
     UpdatePassword(String),
@@ -49,9 +49,9 @@ impl Component for SignUp {
     fn update(&mut self, message: Self::Message) -> ShouldRender {
         match message {
             Msg::CreateNewUser => {
-                let callback = self.link.callback(|jwt_response: FetchResponse<String>| {
-                    if let (_, Json(Ok(jwt))) = jwt_response.into_parts() {
-                        Msg::SaveJwt(jwt)
+                let callback = self.link.callback(|jwt_response: FetchResponse<User>| {
+                    if let (_, Json(Ok(user))) = jwt_response.into_parts() {
+                        Msg::SaveUserName(user.uname)
                     } else {
                         Msg::TryAgain("There was an issue creating that user".to_string())
                     }
@@ -61,8 +61,8 @@ impl Component for SignUp {
                 self.state.saving = true;
                 true
             },
-            Msg::SaveJwt(jwt) => {
-                set_jwt(jwt);
+            Msg::SaveUserName(jwt) => {
+                set_user_name(jwt);
                 let mut agent_dispatch: RouteAgentDispatcher<()> = RouteAgentDispatcher::default();
                 agent_dispatch.send(ChangeRoute(app::Route::HomePage.into()));
                 true

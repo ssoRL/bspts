@@ -6,16 +6,11 @@ use crate::models;
 use crate::PgPooledConnection;
 use diesel::RunQueryDsl;
 use crate::diesel::ExpressionMethods;
-use jsonwebtoken;
 use actix_web::{error, Result, http::StatusCode};
-use std::time::{SystemTime, UNIX_EPOCH};
 
 static PBKDF2_ALG: pbkdf2::Algorithm = pbkdf2::PBKDF2_HMAC_SHA256;
 const CREDENTIAL_LEN: usize = digest::SHA256_OUTPUT_LEN;
 pub type Credential = [u8; CREDENTIAL_LEN];
-
-// TODO: Maybe this isn't security?
-pub const JWT_SECRET: &[u8] = b"ewiruhnnisdfkjn";
 
 /// Takes a user name and password and returns the hashed pw and a random salt
 fn generate_creds(password: &str) -> (Vec<u8>, Vec<u8>) {
@@ -47,34 +42,14 @@ fn check_password(password: &str, user: &models::QUser) -> bool {
     stored_hash == &generated_hash.to_vec()
 }
 
-/// Converts a user to a jwt string that can be used in the future
-pub fn user_to_token(user: models::QUser) -> String {
-    const DEFAULT_TOKEN_VALIDITY: i64 = 3600;
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).expect("Could not get current time");
-    let claim = Claim {
-        id: user.id,
-        sub: user.uname,
-        iat:  now.as_secs() as i64,
-        exp:  now.as_secs() as i64 + DEFAULT_TOKEN_VALIDITY,
-    };
-    let token = jsonwebtoken::encode(
-        &jsonwebtoken::Header::default(),
-        &claim,
-        &jsonwebtoken::EncodingKey::from_secret(JWT_SECRET)
-    );
-
-    // &jsonwebtoken::EncodingKey::from_rsa_pem(key: &[u8]);
-
-    token.expect("Failed to turn user into token")
-}
-
-pub fn login_user(user: NewUser, conn: PgPooledConnection) -> Result<models::QUser> {
+/// Returns the user if they are allowed to log in with that password, or an error otherwise
+pub fn login_user(user: NewUser, conn: &PgPooledConnection) -> Result<models::QUser> {
     use crate::schema::users::dsl::*;
     use diesel::query_dsl::filter_dsl::FilterDsl;
 
     let q_users: Vec<models::QUser> = users
         .filter(uname.eq(user.uname))
-        .load::<models::QUser>(&conn)
+        .load::<models::QUser>(conn)
         .expect("Error getting users");
 
     match &q_users[..] {
@@ -107,7 +82,7 @@ pub fn login_user(user: NewUser, conn: PgPooledConnection) -> Result<models::QUs
 }
 
 /// Saves a new user to the database and then returns that users name and id
-pub fn save_new_user(user: NewUser, conn: PgPooledConnection) -> models::QUser {
+pub fn save_new_user(user: NewUser, conn: &PgPooledConnection) -> models::QUser {
     use crate::schema::users;
 
     let creds = generate_creds(&user.password);
@@ -119,6 +94,6 @@ pub fn save_new_user(user: NewUser, conn: PgPooledConnection) -> models::QUser {
     
     diesel::insert_into(users::table)
         .values(insert)
-        .get_result(&conn)
+        .get_result(conn)
         .expect("Error saving new post")
 }

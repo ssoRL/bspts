@@ -11,6 +11,7 @@ actix = "0.10.0"
 actix-files = "0.4.0"
 actix-rt = "1.1.1"
 actix-web = "3"
+actix-session = "0.4"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 data = { path = "../data" }

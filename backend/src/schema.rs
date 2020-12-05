@@ -1,4 +1,11 @@
 table! {
+    sessions (id) {
+        id -> Int4,
+        user_id -> Int4,
+    }
+}
+
+table! {
     tasks (id) {
         id -> Int4,
         name -> Text,
@@ -22,9 +29,8 @@ table! {
     }
 }
 
-joinable!(tasks -> users (user_id));
-
 allow_tables_to_appear_in_same_query!(
+    sessions,
     tasks,
     users,
 );

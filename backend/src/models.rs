@@ -2,8 +2,27 @@ use chrono::{NaiveDate};
 use serde::{Deserialize, Serialize};
 use crate::schema::*;
 
-#[derive(Queryable, Deserialize, Serialize, Clone, Debug)]
-pub struct QFullTask {
+#[derive(Identifiable, Queryable, Deserialize, Serialize, Clone, Debug)]
+#[table_name = "users"]
+pub struct QUser {
+    pub id: i32,
+    pub uname: String,
+    pub password: Vec<u8>,
+    pub salt: Vec<u8>,
+}
+
+#[derive(Insertable)]
+#[table_name="users"]
+pub struct InsertableUser<'a> {
+    pub uname: &'a str,
+    pub password: Vec<u8>,
+    pub salt: Vec<u8>,
+}
+
+#[derive(Identifiable, Queryable, Associations, Deserialize, Serialize, Clone, Debug)]
+#[belongs_to(QUser, foreign_key = "user_id")]
+#[table_name="tasks"]
+pub struct QTask {
     pub id: i32,
     pub name: String,
     pub description: String,
@@ -29,18 +48,16 @@ pub struct InsertableTask<'a> {
     pub by_when: i32,
 }
 
-#[derive(Queryable, Deserialize, Serialize, Clone, Debug)]
-pub struct QUser {
+#[derive(Identifiable, Queryable, Associations, Deserialize, Serialize, Clone, Debug)]
+#[belongs_to(QUser, foreign_key = "user_id")]
+#[table_name="sessions"]
+pub struct QSession {
     pub id: i32,
-    pub uname: String,
-    pub password: Vec<u8>,
-    pub salt: Vec<u8>,
+    pub user_id: i32,
 }
 
 #[derive(Insertable)]
-#[table_name="users"]
-pub struct InsertableUser<'a> {
-    pub uname: &'a str,
-    pub password: Vec<u8>,
-    pub salt: Vec<u8>,
+#[table_name="sessions"]
+pub struct InsertableSession {
+    pub user_id: i32,
 }

@@ -1,5 +1,4 @@
 BASICS:
-JWT encryption
 certs and tls
 logging
 db backups
@@ -28,3 +27,4 @@ Security everything
     vulnerable to XSS but not using many third parties
     https://security.stackexchange.com/questions/95972/what-are-requirements-for-hmac-secret-key
     http://fileformats.archiveteam.org/wiki/PEM_encoded_RSA_private_key
+    Create key with `openssl rand -base64 256 > jwt.key`

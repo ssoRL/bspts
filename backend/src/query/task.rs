@@ -1,9 +1,8 @@
 use diesel::prelude::*;
 use data::task::*;
-use data::user::Claim;
 use chrono::{NaiveDate, Local, Duration, Datelike};
 use crate::PgPooledConnection;
-use crate::models;
+use crate::models::*;
 
 pub const DAYS: &str = "Days";
 pub const WEEKS: &str = "Weeks";
@@ -46,7 +45,7 @@ fn calc_next_reset(frequency: &TaskInterval) -> NaiveDate {
     }
 }
 
-fn query_task_to_task(qt: &models::QFullTask) -> Task {
+fn query_task_to_task(qt: &QTask) -> Task {
     let frequency = match qt.time_unit.as_str() {
         DAYS => {
             TaskInterval::Days{every: qt.every as u32}
@@ -74,19 +73,15 @@ fn query_task_to_task(qt: &models::QFullTask) -> Task {
 }
 
 /// Get all of the tasks for the user
-pub fn get_tasks(user: Claim, conn: PgPooledConnection) -> Vec<Task> {
-    use crate::schema::tasks::dsl::*;
-
-    let q_tasks = tasks
-        .filter(user_id.eq(user.id))
-        .limit(5)
-        .load::<models::QFullTask>(&conn)
-        .expect("Error loading posts");
+pub fn get_tasks(user: QUser, conn: PgPooledConnection) -> Vec<Task> {
+    let q_tasks = QTask::belonging_to(&user)
+        .load::<QTask>(&conn)
+        .expect("Error loading tasks");
     q_tasks.iter().map(query_task_to_task).collect()
 }
 
 /// Add a new task to the database
-pub fn commit_new_task(new_task: NewTask, user: Claim, conn: PgPooledConnection) -> Task {
+pub fn commit_new_task(new_task: NewTask, user: QUser, conn: PgPooledConnection) -> Task {
     use crate::schema::tasks;
 
     let next_reset = calc_next_reset(&new_task.frequency);
@@ -101,7 +96,7 @@ pub fn commit_new_task(new_task: NewTask, user: Claim, conn: PgPooledConnection)
             (MONTHS, every as i32, day_of_month as i32)
         }
     };
-    let full_task = models::InsertableTask {
+    let full_task = InsertableTask {
         user_id: user.id,
         name: &new_task.name,
         description: &new_task.description,
@@ -112,7 +107,7 @@ pub fn commit_new_task(new_task: NewTask, user: Claim, conn: PgPooledConnection)
         by_when,
     };
     
-    let committed_task: models::QFullTask = diesel::insert_into(tasks::table)
+    let committed_task: QTask = diesel::insert_into(tasks::table)
         .values(full_task)
         .get_result(&conn)
         .expect("Error saving new post");

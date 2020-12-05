@@ -2,7 +2,7 @@ use yew::prelude::*;
 use yew::services::fetch::{FetchTask};
 use data::user::*;
 use yew::format::{Json};
-use crate::apis::{set_jwt, sign_in, FetchResponse};
+use crate::apis::{set_user_name, sign_in, FetchResponse};
 use yew_router::prelude::*;
 use yew_router::agent::RouteRequest::ChangeRoute;
 use crate::app;
@@ -23,7 +23,7 @@ pub struct SignIn {
 
 pub enum Msg {
     LoginUser,
-    SaveJwt(String),
+    SaveUserName(String),
     TryAgain(String),
     UpdateUname(String),
     UpdatePassword(String),
@@ -51,7 +51,7 @@ impl Component for SignIn {
     fn update(&mut self, message: Self::Message) -> ShouldRender {
         match message {
             Msg::LoginUser => {
-                let callback = self.link.callback(|jwt_response: FetchResponse<String>| {
+                let callback = self.link.callback(|jwt_response: FetchResponse<User>| {
                     match jwt_response.into_parts() {
                         (head, _) if head.status == StatusCode::NOT_FOUND => {
                             Msg::TryAgain("No user was found with that username".to_string())
@@ -59,8 +59,8 @@ impl Component for SignIn {
                         (head, _) if head.status == StatusCode::UNAUTHORIZED => {
                             Msg::TryAgain("Incorrect Password".to_string())
                         }
-                        (_, Json(Ok(jwt))) => {
-                            Msg::SaveJwt(jwt)
+                        (_, Json(Ok(user))) => {
+                            Msg::SaveUserName(user.uname)
                         }
                         _ => {
                             Msg::TryAgain("There was some problem, please try again".to_string())
@@ -72,8 +72,8 @@ impl Component for SignIn {
                 self.state.saving = true;
                 true
             },
-            Msg::SaveJwt(jwt) => {
-                set_jwt(jwt);
+            Msg::SaveUserName(jwt) => {
+                set_user_name(jwt);
                 let mut agent_dispatch: RouteAgentDispatcher<()> = RouteAgentDispatcher::default();
                 agent_dispatch.send(ChangeRoute(app::Route::HomePage.into()));
                 true

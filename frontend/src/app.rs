@@ -8,9 +8,9 @@ use crate::apis;
 #[derive(Switch, Debug, Clone)]
 pub enum Route {
     #[to = "/#signin"]
-    SigninPage,
+    SignInPage,
     #[to = "/#signup"]
-    SignupPage,
+    SignUpPage,
     #[to = "/"]
     HomePage,
 }
@@ -34,21 +34,20 @@ impl Component for App {
     }
 
     fn view(&self) -> Html {
-        let render = Router::render(|route: Route| match apis::get_jwt() {
-            None => {
+        let render = Router::render(|route: Route|
+            if apis::is_signed_in() {
+                // If authorized, always go home for now
+                html! {<Home />}
+            } else {
                 match route {
                     // If not authed, can only visit the login or sign up page
-                    Route::SigninPage => html! {<SignIn/>},
-                    Route::SignupPage => html! {<SignUp/>},
+                    Route::SignInPage => html! {<SignIn/>},
+                    Route::SignUpPage => html! {<SignUp/>},
                     // Otherwise directed to auth
                     _ => html! {<AuthOptions/>},
                 }
-            },
-            Some(jwt) => {
-                // If authed, always go home for now
-                html! {<Home jwt={jwt} />}
             }
-        });
+        );
 
         html! {
             <Router<Route, ()> render=render/>

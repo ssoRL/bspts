@@ -9,22 +9,26 @@ mod query;
 mod models;
 mod schema;
 
-use actix_web::{get, error, http::StatusCode, post, web::{Data, HttpRequest, Json}, App, HttpServer};
+use actix_web::{get, error, http::StatusCode, post, web::{Data, Json}, App, HttpServer};
 use actix_files as fs;
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use data::task::*;
 use data::user::*;
 use crate::query::task::*;
 use crate::query::user::*;
+use crate::query::session::*;
 use diesel::pg::PgConnection;
 use dotenv::dotenv;
 use std::env;
-use jsonwebtoken;
+use std::fs::read;
+use actix_session::{Session, CookieSession};
 
 pub type PgPool = Pool<ConnectionManager<PgConnection>>;
 pub type PgPooledConnection = PooledConnection<ConnectionManager<PgConnection>>;
 
 type Rsp<T> = actix_web::Result<Json<T>>;
+
+const SESSION_KEY: &str = "session";
 
 embed_migrations!("./migrations");
 
@@ -41,77 +45,58 @@ fn get_connection_pool() -> PgPool {
 }
 
 /// Runs the provided function with a jwt from the headers, or else throws an error
-fn with_auth<T, F: FnOnce(Claim) -> Rsp<T>>(req: HttpRequest, run: F) -> Rsp<T> {
-    let headers = req.headers();
-    let auth_header = headers.get("auth");
-    match auth_header {
-        Some(jwt_header) => {
-            let jwt = jwt_header.to_str().expect("Could not deserialize jwt from auth header");
-            let decoded_token_result = jsonwebtoken::decode::<Claim>(
-                jwt,
-                &jsonwebtoken::DecodingKey::from_secret(JWT_SECRET),
-                &jsonwebtoken::Validation::default()
-            );
-            match decoded_token_result {
-                Ok(decoded_token) =>  {
-                    let user = decoded_token.claims;
-                    run(user)
-                }
-                Err(e) => {
-                    let msg = format!("Invalid token to access {} because {}", req.uri(), e);
-                    let error = error::InternalError::new(msg, StatusCode::UNAUTHORIZED);
-                    Err(error.into())
-                }
-            }
+fn with_auth<T, F>(ses: Session, data: Data<PgPool>, run: F)-> Rsp<T>
+where
+    F: FnOnce(models::QUser, PgPooledConnection) -> Rsp<T>
+{
+    let pool = data.get_ref().clone();
+    let conn = pool.get().expect("Failed to get database connection");
+    let session_cookie = ses.get::<models::QSession>(SESSION_KEY);
+    match session_cookie {
+        Ok(Some(session)) => {
+            let user = get_session_user(&session, &conn)?;
+            run(user, conn)
         }
-        None => {
-            let msg = format!("Token required to access {}", req.uri());
-            let error = error::InternalError::new(msg, StatusCode::UNAUTHORIZED);
+        _ => {
+            let error = error::InternalError::new("Could not get session", StatusCode::UNAUTHORIZED);
             Err(error.into())
         }
     }
 }
 
 #[post("/login")]
-async fn sign_in_route(payload: Json<NewUser>, database: Data<PgPool>) -> Rsp<String>  {
+async fn sign_in_route(payload: Json<NewUser>, database: Data<PgPool>, ses: Session) -> Rsp<User>  {
     let pool = database.get_ref().clone();
     let conn = pool.get().expect("Failed to get database connection");
     let Json(new_user) = payload;
-    let user_result = login_user(new_user, conn);
-    match user_result {
-        Ok(user) => {
-            let token = user_to_token(user);
-            Ok(Json(token))
-        },
-        Err(e) => Err(e)
-    }
+    let user = login_user(new_user, &conn)?;
+    let new_session = start_session(&user, &conn);
+    ses.set(SESSION_KEY, new_session)?;
+    Ok(Json(User {uname: user.uname}))
 }
 
 #[post("/user")]
-async fn sign_up_route(payload: Json<NewUser>, database: Data<PgPool>) -> Json<String> {
+async fn sign_up_route(payload: Json<NewUser>, database: Data<PgPool>, ses: Session) -> Rsp<User> {
     let pool = database.get_ref().clone();
     let conn = pool.get().expect("Failed to get database connection");
     let Json(new_user) = payload;
-    let user = save_new_user(new_user, conn);
-    let token = user_to_token(user);
-    Json(token)
+    let user = save_new_user(new_user, &conn);
+    let new_session = start_session(&user, &conn);
+    ses.set(SESSION_KEY, new_session)?;
+    Ok(Json(User {uname: user.uname}))
 }
 
 #[get("/task")]
-async fn task_route(req: HttpRequest, database: Data<PgPool>) -> Rsp<Vec<Task>> {
-    with_auth(req, |user: Claim| {
-        let pool = database.get_ref().clone();
-        let conn = pool.get().expect("Failed to get database connection");
+async fn task_route(data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
+    with_auth(ses, data, |user, conn| {
         let tasks = get_tasks(user, conn);
         Ok(Json(tasks))
     })
 }
 
 #[post("/task")]
-async fn commit_new_task_route(req: HttpRequest, payload: Json<NewTask>, database: Data<PgPool>) -> Rsp<Task> {
-    with_auth(req, |user: Claim| {
-        let pool = database.get_ref().clone();
-        let conn = pool.get().expect("Failed to get database connection");
+async fn commit_new_task_route(payload: Json<NewTask>, data: Data<PgPool>, ses: Session) -> Rsp<Task> {
+    with_auth(ses, data, |user, conn| {
         let Json(new_task) = payload;
         let committed_task = commit_new_task(new_task, user, conn);
         Ok(Json(committed_task))
@@ -124,10 +109,16 @@ async fn main() -> std::io::Result<()> {
 
     let pool = get_connection_pool();
 
+    let secret = read("secrets/jwt.key").expect("Could not read jwt secret file.");
+
     let api_url = env::var("API_URL").expect("API_URL must be set");
     HttpServer::new(move || {
         App::new()
             .data(pool.clone())
+            .wrap(
+                CookieSession::signed(&secret) // <- create cookie based session middleware
+                      .secure(false)
+            )
             .service(task_route)
             .service(commit_new_task_route)
             .service(sign_in_route)

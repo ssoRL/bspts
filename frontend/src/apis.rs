@@ -4,6 +4,7 @@ use yew::format::{Json, Nothing};
 use yew::services::{
     storage::{StorageService, Area},
     fetch::{FetchService, FetchTask, Request, Response},
+    ConsoleService
 };
 use data::task::*;
 use data::user::*;
@@ -24,13 +25,31 @@ pub fn get_jwt() -> Option<String>  {
     }
 }
 
+pub fn is_signed_in() -> bool {
+    // check if the user is in local storage
+    let stor = StorageService::new(Area::Local).expect("Could not connect to the local storage");
+    let auth_from_storage: Result<String, _> = stor.restore("user-name");
+    match auth_from_storage {
+        Ok(un) => {
+            ConsoleService::log("Got user");
+            true
+        },
+        Err(_) => false,
+    }
+}
+
 pub fn set_jwt(jwt: String)  {
     let mut stor = StorageService::new(Area::Local).expect("Could not connect to the local storage");
     stor.store("auth-token", Ok(jwt));
 }
 
+pub fn set_user_name(user_name: String) {
+    let mut stor = StorageService::new(Area::Local).expect("Could not connect to the local storage");
+    stor.store("user-name", Ok(user_name));
+}
+
 /// Sends the user's creds to the backend, which responds with an error, or a jwt
-pub fn sign_in(user: NewUser, callback: FetchCallback<String>) -> FetchTask  {
+pub fn sign_in(user: NewUser, callback: FetchCallback<User>) -> FetchTask  {
     let login = Request::post("/login")
         .header("Content-Type", "application/json")
         .body(Json(&user))
@@ -39,7 +58,7 @@ pub fn sign_in(user: NewUser, callback: FetchCallback<String>) -> FetchTask  {
 }
 
 /// Creates a new user account and returns the jwt used to auth the user
-pub fn sign_up(new_user: NewUser, callback: FetchCallback<String>) -> FetchTask  {
+pub fn sign_up(new_user: NewUser, callback: FetchCallback<User>) -> FetchTask  {
     let post = Request::post("/user")
         .header("Content-Type", "application/json")
         .body(Json(&new_user))
@@ -48,19 +67,19 @@ pub fn sign_up(new_user: NewUser, callback: FetchCallback<String>) -> FetchTask 
 }
 
 /// Get a list of all of the tasks
-pub fn get_tasks(callback: FetchCallback<Vec<Task>>, jwt: &String) -> FetchTask {
+pub fn get_tasks(callback: FetchCallback<Vec<Task>>) -> FetchTask {
     let get = Request::get("/task")
-        .header("auth", jwt)
+        .header("auth", "")
         .body(Nothing)
         .unwrap();
     FetchService::fetch(get, callback).unwrap()
 }
 
 /// Commits a new task to 
-pub fn commit_new_task(new_task: NewTask, callback: FetchCallback<Task>, jwt: &String) -> FetchTask {
+pub fn commit_new_task(new_task: NewTask, callback: FetchCallback<Task>) -> FetchTask {
         let post = Request::post("/task")
             .header("Content-Type", "application/json")
-            .header("auth", jwt)
+            .header("auth", "")
             .body(Json(&new_task))
             .unwrap();
         FetchService::fetch(post, callback).unwrap()

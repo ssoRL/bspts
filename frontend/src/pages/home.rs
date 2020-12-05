@@ -7,9 +7,6 @@ use yew::services::fetch::{FetchTask};
 use yew::services::console::{ConsoleService};
 
 #[derive(Properties, Clone)]
-pub struct Props {
-    pub jwt: String,
-}
 
 struct State {
     tasks_option: Option<Vec<Task>>,
@@ -21,12 +18,11 @@ pub struct Home {
     state: State,
     link: ComponentLink<Self>,
     fetch_tasks: Option<FetchTask>,
-    props: Props,
 }
 
 pub enum Msg {
     FetchTasks,
-    RecieveTasks(Vec<Task>),
+    ReceiveTasks(Vec<Task>),
     OpenTaskCreationComponent,
     NewTaskCommitted(Task),
     CancelCreateTask,
@@ -36,9 +32,9 @@ pub enum Msg {
 
 impl Component for Home {
     type Message = Msg;
-    type Properties = Props;
+    type Properties = ();
 
-    fn create(properties: Self::Properties, link: ComponentLink<Self>) -> Self {
+    fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
         ConsoleService::info("Getting tasks");
 
         // Get the ball rolling on getting the tasks
@@ -52,7 +48,6 @@ impl Component for Home {
             },
             link,
             fetch_tasks: None,
-            props: properties,
         }
     }
 
@@ -62,18 +57,18 @@ impl Component for Home {
             Msg::FetchTasks => {
                 let callback = self.link.callback(|response: FetchResponse<Vec<Task>>| {
                     if let (_, Json(Ok(tasks))) = response.into_parts() {
-                        Msg::RecieveTasks(tasks)
+                        Msg::ReceiveTasks(tasks)
                     } else {
                         // TODO: show an error in this case
                         Msg::ShowError("Failed to deserialize tasks".to_string())
                     }
                 });
-                let fetch_task = get_tasks(callback, &self.props.jwt);
+                let fetch_task = get_tasks(callback);
                 self.fetch_tasks = Some(fetch_task);
                 false
             },
             // The message to handle the fetch of tasks coming back
-            Msg::RecieveTasks(tasks) => {
+            Msg::ReceiveTasks(tasks) => {
                 self.state.tasks_option= Some(tasks);
                 true
             }
@@ -144,7 +139,7 @@ impl Component for Home {
             let on_cancel = self.link.callback(|_| {Msg::CancelCreateTask});
             html! {
                 <Popup>
-                    <TaskEditor task_to_edit={None} on_create={on_create} on_cancel={on_cancel} jwt={self.props.jwt.clone()} />
+                    <TaskEditor task_to_edit={None} on_create={on_create} on_cancel={on_cancel} />
                 </Popup>
             }
         } else {

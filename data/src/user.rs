@@ -10,9 +10,6 @@ pub struct NewUser {
 
 /// The fields that are exposed in the JWT claim for a user
 #[derive(Deserialize, Serialize, Clone, Debug)]
-pub struct Claim {
-    pub id: i32,
-    pub sub: String,
-    pub iat: i64,
-    pub exp: i64,
+pub struct User {
+    pub uname: String,
 }

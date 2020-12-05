@@ -25,10 +25,10 @@ impl Component for AuthOptions {
     fn view(&self) -> Html {
         html! {
             <div>
-                <Anchor route=app::Route::SignupPage classes="button">
+                <Anchor route=app::Route::SignUpPage classes="button">
                     {"Sign Up"}
                 </Anchor>
-                <Anchor route=app::Route::SigninPage classes="button">
+                <Anchor route=app::Route::SignInPage classes="button">
                     {"Sign In"}
                 </Anchor>
             </div>
