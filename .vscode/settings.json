@@ -15,6 +15,7 @@
         "oninput",
         "pbkdf",
         "postgres",
+        "postgresql",
         "wasm"
     ]
 }

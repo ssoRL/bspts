@@ -19,6 +19,7 @@ command = "cargo"
 args = ["run", "-p", "backend"]
 watch = { watch = ["backend"] }
 
+# Starts a new datadase container listening to 5433
 [tasks.test-db]
 script = """
     docker run --rm \
@@ -29,8 +30,14 @@ script = """
     -d postgres
 """
 
+# Stops the container
 [tasks.stop-db]
 script = "docker stop bspts_db_container"
 
 [tasks.build-app]
 script = "docker build . -t bspts-app"
+
+[tasks.run-contained]
+script = [
+    "docker-compose up"
+]

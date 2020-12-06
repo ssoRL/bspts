@@ -33,7 +33,10 @@ const SESSION_KEY: &str = "session";
 embed_migrations!("./migrations");
 
 fn get_connection_pool() -> PgPool {
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
+    let pg_pw = env::var("POSTGRES_PASSWORD").expect("POSTGRES_PASSWORD must be set");
+    let pg_port = env::var("POSTGRES_PORT").expect("POSTGRES_PORT must be set");
+    let pg_db = env::var("POSTGRES_DB").expect("POSTGRES_DB must be set");
+    let database_url = format!("postgres://postgres:{}@{}/{}", pg_pw, pg_port, pg_db);
     let manager = ConnectionManager::<PgConnection>::new(database_url);
     let pool = Pool::builder().build(manager).expect("Failed to create pool.");
     let conn = pool.get().expect("Could not get connection");
@@ -109,14 +112,13 @@ async fn main() -> std::io::Result<()> {
 
     let pool = get_connection_pool();
 
-    let secret = read("secrets/jwt.key").expect("Could not read jwt secret file.");
-
     let api_url = env::var("API_URL").expect("API_URL must be set");
+    let cookie_key =  env::var("COOKIE_KEY").expect("COOKIE_KEY must be set");
     HttpServer::new(move || {
         App::new()
             .data(pool.clone())
             .wrap(
-                CookieSession::signed(&secret) // <- create cookie based session middleware
+                CookieSession::signed(&cookie_key.as_bytes()) // <- create cookie based session middleware
                       .secure(false)
             )
             .service(task_route)

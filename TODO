@@ -1,4 +1,9 @@
 BASICS:
+nginx http on droplet
+https
+    https://certbot.eff.org/lets-encrypt/debianbuster-nginx
+backups:
+    https://docs.docker.com/storage/volumes/#backup-restore-or-migrate-data-volumes
 certs and tls
 logging
 db backups
