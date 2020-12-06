@@ -1,5 +1,4 @@
 BASICS:
-nginx http on droplet
 https
     https://certbot.eff.org/lets-encrypt/debianbuster-nginx
 backups:
@@ -33,3 +32,5 @@ Security everything
     https://security.stackexchange.com/questions/95972/what-are-requirements-for-hmac-secret-key
     http://fileformats.archiveteam.org/wiki/PEM_encoded_RSA_private_key
     Create key with `openssl rand -base64 256 > jwt.key`
+nginx
+    https://ubuntu.com/tutorials/install-and-configure-nginx#1-overview

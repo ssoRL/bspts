@@ -1,7 +1,7 @@
 version: "3.8"
 services:
   web:
-    image: bspts-app
+    image: olsons10/bspts
     env_file: 
       - compose.env
     ports:

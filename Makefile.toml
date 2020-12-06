@@ -35,7 +35,7 @@ script = """
 script = "docker stop bspts_db_container"
 
 [tasks.build-app]
-script = "docker build . -t bspts-app"
+script = "docker build . -t olsons10/bspts"
 
 [tasks.run-contained]
 script = [
