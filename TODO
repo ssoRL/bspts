@@ -1,11 +1,7 @@
 BASICS:
-https
-    https://certbot.eff.org/lets-encrypt/debianbuster-nginx
 backups:
     https://docs.docker.com/storage/volumes/#backup-restore-or-migrate-data-volumes
-certs and tls
 logging
-db backups
 documentation
 fetch macro to reduce boilerplate of adding jwt
 chron jobs to mark done
@@ -34,3 +30,6 @@ Security everything
     Create key with `openssl rand -base64 256 > jwt.key`
 nginx
     https://ubuntu.com/tutorials/install-and-configure-nginx#1-overview
+    https://certbot.eff.org/lets-encrypt/ubuntufocal-nginx
+    https://www.digitalocean.com/docs/networking/firewalls/how-to/manage-droplets/
+    
