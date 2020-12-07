@@ -19,7 +19,7 @@ pub struct InsertableUser<'a> {
     pub salt: Vec<u8>,
 }
 
-#[derive(Identifiable, Queryable, Associations, Deserialize, Serialize, Clone, Debug)]
+#[derive(Identifiable, Queryable, Associations, AsChangeset, Deserialize, Serialize, Clone, Debug)]
 #[belongs_to(QUser, foreign_key = "user_id")]
 #[table_name="tasks"]
 pub struct QTask {

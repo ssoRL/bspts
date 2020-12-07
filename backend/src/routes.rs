@@ -1,4 +1,11 @@
-use actix_web::{get, error, http::StatusCode, post, web::{Data, Json}};
+use actix_web::{
+    get,
+    post,
+    put,
+    error,
+    http::StatusCode,
+    web::{self, Data, Json}
+};
 use data::task::*;
 use data::user::*;
 use crate::query::task::*;
@@ -57,7 +64,7 @@ async fn sign_up_route(payload: Json<NewUser>, database: Data<PgPool>, ses: Sess
 #[get("/task")]
 async fn task_route(data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
     with_auth(ses, data, |user, conn| {
-        let tasks = get_tasks(user, conn);
+        let tasks = get_tasks(user, &conn);
         Ok(Json(tasks))
     })
 }
@@ -68,5 +75,19 @@ async fn commit_new_task_route(payload: Json<NewTask>, data: Data<PgPool>, ses: 
         let Json(new_task) = payload;
         let committed_task = commit_new_task(new_task, user, conn);
         Ok(Json(committed_task))
+    })
+}
+
+#[put("/task/{id}")]
+async fn update_task_route(
+    web::Path(id): web::Path<i32>,
+    payload: Json<NewTask>,
+    data: Data<PgPool>,
+    ses: Session
+) -> Rsp<Task> {
+    with_auth(ses, data, |_user, conn| {
+        let Json(task_updates) = payload;
+        let updated_task = update_task(id, task_updates, &conn)?;
+        Ok(Json(updated_task))
     })
 }

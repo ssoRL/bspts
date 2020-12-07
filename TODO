@@ -10,8 +10,8 @@ yew tests (Might have to do some original work here X_X)
 reformat use (just fmt in general??)
 
 FEATURES:
-delete a task
 edit a task
+delete a task
 check off task
 goodies
 set icons

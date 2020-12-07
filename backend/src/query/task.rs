@@ -3,6 +3,7 @@ use data::task::*;
 use chrono::{NaiveDate, Local, Duration, Datelike};
 use crate::PgPooledConnection;
 use crate::models::*;
+use actix_web::{Result, error, http::StatusCode};
 
 pub const DAYS: &str = "Days";
 pub const WEEKS: &str = "Weeks";
@@ -73,11 +74,22 @@ fn query_task_to_task(qt: &QTask) -> Task {
 }
 
 /// Get all of the tasks for the user
-pub fn get_tasks(user: QUser, conn: PgPooledConnection) -> Vec<Task> {
+pub fn get_tasks(user: QUser, conn: &PgPooledConnection) -> Vec<Task> {
     let q_tasks = QTask::belonging_to(&user)
-        .load::<QTask>(&conn)
+        .load::<QTask>(conn)
         .expect("Error loading tasks");
     q_tasks.iter().map(query_task_to_task).collect()
+}
+
+fn get_q_task(task_id: i32, conn: &PgPooledConnection) -> Option<QTask> {
+    use crate::schema::tasks::dsl::*;
+
+    let mut q_task = tasks
+        .filter(id.eq(task_id))
+        .load::<QTask>(conn)
+        .expect("Error getting users");
+    // Should be a vec of only one item, return that item
+    q_task.pop()
 }
 
 /// Add a new task to the database
@@ -110,7 +122,49 @@ pub fn commit_new_task(new_task: NewTask, user: QUser, conn: PgPooledConnection)
     let committed_task: QTask = diesel::insert_into(tasks::table)
         .values(full_task)
         .get_result(&conn)
-        .expect("Error saving new post");
+        .expect("Error saving new task");
 
     query_task_to_task(&committed_task)
+}
+
+/// Add a new task to the database
+pub fn update_task(task_id: i32, new_task: NewTask, conn: &PgPooledConnection) -> Result<Task> {
+    use crate::schema::tasks::dsl::tasks;
+
+    let mut q_task: QTask = match get_q_task(task_id, &conn) {
+        Some(q) => q,
+        None => {
+            let error = error::InternalError::new(
+                "There's no task with that id".to_string(),
+                StatusCode::NOT_FOUND
+            );
+            return Err(error.into())
+        }
+    };
+
+    let (time_unit, every, by_when) = match new_task.frequency {
+        TaskInterval::Days{every} => {
+            (DAYS, every as i32, 0)
+        },
+        TaskInterval::Weeks{every, weekday} => {
+            (WEEKS, every as i32, weekday as i32)
+        },
+        TaskInterval::Months{every, day_of_month} => {
+            (MONTHS, every as i32, day_of_month as i32)
+        }
+    };
+
+    q_task.name = new_task.name;
+    q_task.description = new_task.description;
+    q_task.bspts = new_task.bspts;
+    q_task.every = every;
+    q_task.time_unit = time_unit.to_string();
+    q_task.by_when = by_when;
+    
+    let committed_task: QTask = diesel::update(tasks.find(task_id))
+        .set(&q_task)
+        .get_result(conn)
+        .expect("Error updating task");
+
+    Ok(query_task_to_task(&committed_task))
 }
