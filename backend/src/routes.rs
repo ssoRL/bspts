@@ -10,7 +10,7 @@ use crate::{PgPool, PgPooledConnection};
 
 type Rsp<T> = actix_web::Result<Json<T>>;
 
-const SESSION_KEY: &str = "session";
+const SESSION_ID_KEY: &str = "session_id";
 
 /// Runs the provided function after checking the user's session is OK
 fn with_auth<T, F>(ses: Session, data: Data<PgPool>, run: F)-> Rsp<T>
@@ -19,10 +19,10 @@ where
 {
     let pool = data.get_ref().clone();
     let conn = pool.get().expect("Failed to get database connection");
-    let session_cookie = ses.get::<models::QSession>(SESSION_KEY);
+    let session_cookie = ses.get::<i32>(SESSION_ID_KEY);
     match session_cookie {
-        Ok(Some(session)) => {
-            let user = get_session_user(&session, &conn)?;
+        Ok(Some(session_id)) => {
+            let user = get_session_user(session_id, &conn)?;
             run(user, conn)
         }
         _ => {
@@ -39,7 +39,7 @@ async fn sign_in_route(payload: Json<NewUser>, database: Data<PgPool>, ses: Sess
     let Json(new_user) = payload;
     let user = login_user(new_user, &conn)?;
     let new_session = start_session(&user, &conn);
-    ses.set(SESSION_KEY, new_session)?;
+    ses.set(SESSION_ID_KEY, new_session.id)?;
     Ok(Json(User {uname: user.uname}))
 }
 
@@ -50,7 +50,7 @@ async fn sign_up_route(payload: Json<NewUser>, database: Data<PgPool>, ses: Sess
     let Json(new_user) = payload;
     let user = save_new_user(&new_user, &conn)?;
     let new_session = start_session(&user, &conn);
-    ses.set(SESSION_KEY, new_session)?;
+    ses.set(SESSION_ID_KEY, new_session.id)?;
     Ok(Json(User {uname: user.uname}))
 }
 

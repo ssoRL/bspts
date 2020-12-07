@@ -1,10 +1,11 @@
 use yew::prelude::*;
 use data::task::{Task};
-use crate::apis::{get_tasks, FetchResponse};
+use crate::apis::{get_tasks, sign_out_frontend, FetchResponse};
 use crate::components::{TaskItem, TaskEditor, Popup};
 use yew::format::{Json};
 use yew::services::fetch::{FetchTask};
 use yew::services::console::{ConsoleService};
+use http::status::StatusCode;
 
 #[derive(Properties, Clone)]
 
@@ -27,7 +28,7 @@ pub enum Msg {
     NewTaskCommitted(Task),
     CancelCreateTask,
     MarkTaskCompleted(i32),
-    ShowError(String),
+    HandleError{msg: String, code: Option<StatusCode>},
 }
 
 impl Component for Home {
@@ -56,17 +57,22 @@ impl Component for Home {
             // Fetch the tasks that the user has saved
             Msg::FetchTasks => {
                 let callback = self.link.callback(|response: FetchResponse<Vec<Task>>| {
-                    if let (_, Json(Ok(tasks))) = response.into_parts() {
-                        Msg::ReceiveTasks(tasks)
-                    } else {
-                        // TODO: show an error in this case
-                        Msg::ShowError("Failed to deserialize tasks".to_string())
+                    match response.into_parts() {
+                        (_, Json(Ok(tasks))) => {
+                            Msg::ReceiveTasks(tasks)
+                        }
+                        (parts, _) => {
+                            Msg::HandleError{
+                                msg: "Failed to get tasks".to_string(),
+                                code: Some(parts.status),
+                            }
+                        }
                     }
                 });
                 let fetch_task = get_tasks(callback);
                 self.fetch_tasks = Some(fetch_task);
                 false
-            },
+            }
             // The message to handle the fetch of tasks coming back
             Msg::ReceiveTasks(tasks) => {
                 self.state.tasks_option= Some(tasks);
@@ -75,7 +81,7 @@ impl Component for Home {
             Msg::OpenTaskCreationComponent => {
                 self.state.edit_popup = true;
                 true
-            },
+            }
             Msg::NewTaskCommitted(task) => {
                 // The task has been added on the backend, add it to the UI now
                 match &mut self.state.tasks_option {
@@ -90,13 +96,17 @@ impl Component for Home {
             Msg::CancelCreateTask => {
                 self.state.edit_popup = false;
                 true
-            },
+            }
             Msg::MarkTaskCompleted(_task_id) => {
                 // Don't do anything here atm
                 false
-            },
-            Msg::ShowError(msg) => {
-                self.state.error_message = Some(msg);
+            }
+            Msg::HandleError{msg, code} => {
+                if let Some(StatusCode::UNAUTHORIZED) = code {
+                    sign_out_frontend();
+                } else {
+                    self.state.error_message = Some(msg);
+                }
                 true
             }
         }

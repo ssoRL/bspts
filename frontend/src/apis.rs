@@ -8,44 +8,44 @@ use yew::services::{
 };
 use data::task::*;
 use data::user::*;
+use crate::app;
+use yew_router::prelude::*;
+use yew_router::agent::RouteRequest::ChangeRoute;
 
 pub type FetchResponse<T> = Response<Json<Result<T, Error>>>;
 type FetchCallback<T> = Callback<FetchResponse<T>>;
 
-pub fn get_jwt() -> Option<String>  {
-    let stor = StorageService::new(Area::Local).expect("Could not connect to the local storage");
-    let auth_from_storage: Result<String, _> = stor.restore("auth-token");
-    match auth_from_storage {
-        Ok(jwt) => {
-            Some(jwt)
-        },
-        Err(_) => {
-            None
-        }
-    }
-}
+const UNAME_KEY: &str = "user-name";
 
+/// Check if the user has signed in
 pub fn is_signed_in() -> bool {
-    // check if the user is in local storage
+    // There will be a user-name value in local storage if the user has signed in
+    // and gotten back a session cookie
     let stor = StorageService::new(Area::Local).expect("Could not connect to the local storage");
-    let auth_from_storage: Result<String, _> = stor.restore("user-name");
-    match auth_from_storage {
-        Ok(un) => {
-            ConsoleService::log("Got user");
-            true
-        },
-        Err(_) => false,
-    }
+    let auth_from_storage: Result<String, _> = stor.restore(UNAME_KEY);
+    auth_from_storage.is_ok()
 }
 
-pub fn set_jwt(jwt: String)  {
+/// Remove the user's id from local storage to
+/// mark them as unauthorized, then re-routes to
+/// the home page
+pub fn sign_out_frontend() {
     let mut stor = StorageService::new(Area::Local).expect("Could not connect to the local storage");
-    stor.store("auth-token", Ok(jwt));
+    stor.remove(UNAME_KEY);
+    let mut agent_dispatch: RouteAgentDispatcher<()> = RouteAgentDispatcher::default();
+    agent_dispatch.send(ChangeRoute(app::Route::HomePage.into()));
 }
 
-pub fn set_user_name(user_name: String) {
+/// Sets the user-name field in local storage.
+/// This communicates to the router that the user is
+/// signed in. Do this instead of checking the session
+/// cookie since yew doesn't have a cookie service.
+/// Then route the use to the home route
+pub fn sign_in_frontend(user_name: String) {
     let mut stor = StorageService::new(Area::Local).expect("Could not connect to the local storage");
-    stor.store("user-name", Ok(user_name));
+    stor.store(UNAME_KEY, Ok(user_name));
+    let mut agent_dispatch: RouteAgentDispatcher<()> = RouteAgentDispatcher::default();
+    agent_dispatch.send(ChangeRoute(app::Route::HomePage.into()));
 }
 
 /// Sends the user's creds to the backend, which responds with an error, or a jwt

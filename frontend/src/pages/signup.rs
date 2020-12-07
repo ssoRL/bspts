@@ -2,10 +2,7 @@ use yew::prelude::*;
 use yew::services::fetch::{FetchTask};
 use data::user::*;
 use yew::format::{Json};
-use crate::apis::{set_user_name, sign_up, FetchResponse};
-use yew_router::prelude::*;
-use yew_router::agent::RouteRequest::ChangeRoute;
-use crate::app;
+use crate::apis::{sign_in_frontend, sign_up, FetchResponse};
 
 struct State {
     new_user: NewUser,
@@ -62,9 +59,7 @@ impl Component for SignUp {
                 true
             },
             Msg::SaveUserName(jwt) => {
-                set_user_name(jwt);
-                let mut agent_dispatch: RouteAgentDispatcher<()> = RouteAgentDispatcher::default();
-                agent_dispatch.send(ChangeRoute(app::Route::HomePage.into()));
+                sign_in_frontend(jwt);
                 true
             },
             Msg::TryAgain(error) => {
