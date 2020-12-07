@@ -73,7 +73,7 @@ pub fn login_user(user: NewUser, conn: &PgPooledConnection) -> Result<models::QU
         },
         _ => {
             let error = error::InternalError::new(
-                "There's no user with that username".to_string(),
+                "Ambiguous user name".to_string(),
                 StatusCode::CONFLICT
             );
             Err(error.into())
@@ -82,7 +82,7 @@ pub fn login_user(user: NewUser, conn: &PgPooledConnection) -> Result<models::QU
 }
 
 /// Saves a new user to the database and then returns that users name and id
-pub fn save_new_user(user: NewUser, conn: &PgPooledConnection) -> models::QUser {
+pub fn save_new_user(user: &NewUser, conn: &PgPooledConnection) -> Result<models::QUser> {
     use crate::schema::users;
 
     let creds = generate_creds(&user.password);
@@ -92,8 +92,15 @@ pub fn save_new_user(user: NewUser, conn: &PgPooledConnection) -> models::QUser 
         salt: creds.1
     };
     
-    diesel::insert_into(users::table)
+    let save_user_result = diesel::insert_into(users::table)
         .values(insert)
-        .get_result(conn)
-        .expect("Error saving new post")
+        .get_result::<models::QUser>(conn);
+
+    save_user_result.map_err(|_| {
+        let error = error::InternalError::new(
+            "There's already a user with that username".to_string(),
+            StatusCode::CONFLICT
+        );
+        error.into()
+    })
 }

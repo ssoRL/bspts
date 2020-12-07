@@ -1,0 +1,72 @@
+use actix_web::{get, error, http::StatusCode, post, web::{Data, Json}};
+use data::task::*;
+use data::user::*;
+use crate::query::task::*;
+use crate::query::user::*;
+use crate::query::session::*;
+use crate::models;
+use actix_session::{Session};
+use crate::{PgPool, PgPooledConnection};
+
+type Rsp<T> = actix_web::Result<Json<T>>;
+
+const SESSION_KEY: &str = "session";
+
+/// Runs the provided function after checking the user's session is OK
+fn with_auth<T, F>(ses: Session, data: Data<PgPool>, run: F)-> Rsp<T>
+where
+    F: FnOnce(models::QUser, PgPooledConnection) -> Rsp<T>
+{
+    let pool = data.get_ref().clone();
+    let conn = pool.get().expect("Failed to get database connection");
+    let session_cookie = ses.get::<models::QSession>(SESSION_KEY);
+    match session_cookie {
+        Ok(Some(session)) => {
+            let user = get_session_user(&session, &conn)?;
+            run(user, conn)
+        }
+        _ => {
+            let error = error::InternalError::new("Could not get session", StatusCode::UNAUTHORIZED);
+            Err(error.into())
+        }
+    }
+}
+
+#[post("/login")]
+async fn sign_in_route(payload: Json<NewUser>, database: Data<PgPool>, ses: Session) -> Rsp<User>  {
+    let pool = database.get_ref().clone();
+    let conn = pool.get().expect("Failed to get database connection");
+    let Json(new_user) = payload;
+    let user = login_user(new_user, &conn)?;
+    let new_session = start_session(&user, &conn);
+    ses.set(SESSION_KEY, new_session)?;
+    Ok(Json(User {uname: user.uname}))
+}
+
+#[post("/user")]
+async fn sign_up_route(payload: Json<NewUser>, database: Data<PgPool>, ses: Session) -> Rsp<User> {
+    let pool = database.get_ref().clone();
+    let conn = pool.get().expect("Failed to get database connection");
+    let Json(new_user) = payload;
+    let user = save_new_user(&new_user, &conn)?;
+    let new_session = start_session(&user, &conn);
+    ses.set(SESSION_KEY, new_session)?;
+    Ok(Json(User {uname: user.uname}))
+}
+
+#[get("/task")]
+async fn task_route(data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
+    with_auth(ses, data, |user, conn| {
+        let tasks = get_tasks(user, conn);
+        Ok(Json(tasks))
+    })
+}
+
+#[post("/task")]
+async fn commit_new_task_route(payload: Json<NewTask>, data: Data<PgPool>, ses: Session) -> Rsp<Task> {
+    with_auth(ses, data, |user, conn| {
+        let Json(new_task) = payload;
+        let committed_task = commit_new_task(new_task, user, conn);
+        Ok(Json(committed_task))
+    })
+}
