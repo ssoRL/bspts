@@ -60,7 +60,11 @@ impl Component for TaskItem {
         let do_by = "Do by today".to_string();
 
         html! {
-            <div class={format!("badge task-item {}", is_done_class)} onclick={on_tick}>
+            <div
+                class={format!("badge task-item {}", is_done_class)}
+                onclick={on_tick}
+                title={&task.description}
+            >
                 <div class="task-name">{&task.name}</div>
                 <div class="info-line">
                     <span class="points">{pts_desc}</span>

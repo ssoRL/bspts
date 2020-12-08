@@ -12,10 +12,13 @@ reformat use (just fmt in general??)
 FEATURES:
 edit a task
 delete a task
+styling for no auth page
+styling for task edit
 check off task
 goodies
 set icons
 signing out I guess
+use text input and pattern for bspts input
 
 WRITE-UPS:
 Yew routing bullshit

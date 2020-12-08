@@ -14,11 +14,13 @@ pub struct NewTask {
 /// The interval at which this task should be completed
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub enum TaskInterval {
-    /// Task to be completed every [param1] days
+    /// Task to be completed every X days
     Days{every: u32},
-    // Task to be completed every x weeks on the specified weekday
+    /// Task to be completed every X weeks on the specified weekday.
+    /// Weekday is defined with Monday=0, Tue=1, etc.
     Weeks{every: u32, weekday: u32},
-    // Task to be completed every x months on the [day_of_month]th of the month
+    /// Task to be completed every X months on specified day of the month
+    /// Day of the month is defined so 1st=1, 2nd=2, etc.
     Months{every: u32, day_of_month: u32},
 }
 

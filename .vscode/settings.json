@@ -12,6 +12,7 @@
         "jsonwebtoken",
         "maxlength",
         "olsons",
+        "onchange",
         "onclick",
         "oninput",
         "pbkdf",
