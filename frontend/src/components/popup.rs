@@ -33,7 +33,7 @@ impl Component for Popup {
     fn view(&self) -> Html {
         // Basically just wrap the child component in hella styling
         html! {
-            <div class="pop-up-screen"><div class="popup"><div class="pop-up-content">
+            <div class="pop-up-screen" title=""><div class="popup"><div class="pop-up-content">
                 {self.props.children.clone()}
             </div></div></div>
         }

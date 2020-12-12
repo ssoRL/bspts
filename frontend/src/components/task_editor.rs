@@ -1,7 +1,7 @@
 use data::task::*;
 use yew::services::console::{ConsoleService};
 use yew::format::{Json};
-use crate::apis::{commit_new_task, FetchResponse};
+use crate::apis::{commit_new_task, update_task, FetchResponse};
 use yew::services::fetch::{FetchTask};
 use yew::prelude::*;
 
@@ -19,14 +19,17 @@ pub struct Props {
     pub on_cancel: Callback<()>,
 }
 
+/// THe mode the task editor is in: create a new task or edit and existing
 pub enum Mode {
-    Create(NewTask),
-    Edit(Task),
+    Create,
+    /// Keeps track of the task's id
+    Edit(i32),
 }
 
 pub struct State {
     pub mode: Mode,
     pub saving: bool,
+    task: NewTask,
 }
 
 pub enum Msg {
@@ -46,23 +49,31 @@ impl Component for TaskEditor {
     type Properties = Props;
 
     fn create(properties: Self::Properties, link: ComponentLink<Self>) -> Self {
-        let mode = match properties.task_to_edit {
-            None => {
-                Mode::Create(NewTask {
+        let (mode, task_to_edit) = match properties.task_to_edit {
+            None => {(
+                Mode::Create,
+                NewTask {
                     name: "".to_string(),
                     description: "".to_string(),
                     bspts: 0,
                     frequency: TaskInterval::Days{every: 1}
-                })
-            },
-            Some(task) => {
-                Mode::Edit(task)
-            },
+                }
+            )}
+            Some(task) => {(
+                Mode::Edit(task.id),
+                NewTask {
+                    name: task.name,
+                    description: task.description,
+                    bspts: task.bspts,
+                    frequency: task.frequency,
+                }
+            )},
         };
         Self {
             state : State{
                 mode,
                 saving: false,
+                task: task_to_edit,
             },
             props: Props {
                 task_to_edit: None,
@@ -77,33 +88,21 @@ impl Component for TaskEditor {
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
             Msg::UpdateName(name) => {
-                match &mut self.state.mode {
-                    Mode::Create(task) => task.name = name,
-                    Mode::Edit(task) => task.name = name,
-                }
+                self.state.task.name = name;
                 false
             }
             Msg::UpdatePoints(bspts_as_string) => {
                 let bspts = bspts_as_string.parse::<i32>().unwrap();
-                match &mut self.state.mode {
-                    Mode::Create(task) => task.bspts = bspts,
-                    Mode::Edit(task) => task.bspts = bspts,
-                }
+                self.state.task.bspts = bspts;
                 false
             }
             Msg::UpdateDescription(desc) => {
-                match &mut self.state.mode {
-                    Mode::Create(task) => task.description = desc,
-                    Mode::Edit(task) => task.description = desc,
-                }
+                self.state.task.description = desc;
                 false
             }
             // Change between days, weeks, months
             Msg::UpdateFrequencyUnit(time_unit) => {
-                let current_freq = match &mut self.state.mode {
-                    Mode::Create(task) => &task.frequency,
-                    Mode::Edit(task) => &task.frequency,
-                };
+                let current_freq = &self.state.task.frequency;
                 let (every, by) = match current_freq {
                     TaskInterval::Days{every} => (every, &(0 as u32)),
                     TaskInterval::Weeks{every, weekday} => (every, weekday),
@@ -115,63 +114,48 @@ impl Component for TaskEditor {
                     "m" => TaskInterval::Months{every: *every, day_of_month: *by},
                     _ => panic!("Invalid time unit for task frequency"),
                 };
-                match &mut self.state.mode {
-                    Mode::Create(task) => task.frequency = new_freq,
-                    Mode::Edit(task) => task.frequency = new_freq,
-                }
+                self.state.task.frequency = new_freq;
                 true
             }
             // Change between days, weeks, months
             Msg::UpdateFrequencyEvery(every_as_string) => {
                 let new_every = every_as_string.parse::<u32>().unwrap();
-                let current_freq = match &mut self.state.mode {
-                    Mode::Create(task) => &task.frequency,
-                    Mode::Edit(task) => &task.frequency,
-                };
+                let current_freq = &self.state.task.frequency;
                 let new_freq = match current_freq {
                     TaskInterval::Days{every:_} => TaskInterval::Days{every: new_every},
                     TaskInterval::Weeks{every:_, weekday} => TaskInterval::Weeks{
                         every: new_every,
-                        weekday: *weekday
+                        weekday: *weekday,
                     },
                     TaskInterval::Months{every:_, day_of_month} => TaskInterval::Months{
                         every: new_every,
                         day_of_month: *day_of_month
                     },
                 };
-                match &mut self.state.mode {
-                    Mode::Create(task) => task.frequency = new_freq,
-                    Mode::Edit(task) => task.frequency = new_freq,
-                }
+                self.state.task.frequency = new_freq;
                 false
             }
             // Change between days, weeks, months
             Msg::UpdateFrequencyBy(by_as_string) => {
                 let new_by = by_as_string.parse::<u32>().unwrap();
-                let current_freq = match &mut self.state.mode {
-                    Mode::Create(task) => &task.frequency,
-                    Mode::Edit(task) => &task.frequency,
-                };
+                let current_freq = &self.state.task.frequency;
                 let new_freq = match current_freq {
                     TaskInterval::Days{every} => TaskInterval::Days{every: *every},
-                    TaskInterval::Weeks{every, weekday} => TaskInterval::Weeks{
+                    TaskInterval::Weeks{every, weekday:_} => TaskInterval::Weeks{
                         every: *every,
                         weekday: new_by
                     },
-                    TaskInterval::Months{every, day_of_month} => TaskInterval::Months{
+                    TaskInterval::Months{every, day_of_month:_} => TaskInterval::Months{
                         every: *every,
                         day_of_month: new_by
                     },
                 };
-                match &mut self.state.mode {
-                    Mode::Create(task) => task.frequency = new_freq,
-                    Mode::Edit(task) => task.frequency = new_freq,
-                }
+                self.state.task.frequency = new_freq;
                 false
             }
             Msg::SaveTask => {
                 match &self.state.mode {
-                    Mode::Create(new_task) => {
+                    Mode::Create => {
                         self.state.saving = true;
                         let task_committed_callback = self.link.callback(|response: FetchResponse<Task>| {
                             if let (_, Json(Ok(task))) = response.into_parts() {
@@ -182,11 +166,20 @@ impl Component for TaskEditor {
                                 Msg::CancelEdit
                             }
                         });
-                        self.save_task_fetch = Some(commit_new_task(new_task.clone(), task_committed_callback));
+                        self.save_task_fetch = Some(commit_new_task(self.state.task.clone(), task_committed_callback));
                     }
-                    Mode::Edit(task) => {
-                        // TODO: update on the backend, for now just return as-is
-                        self.link.send_message(Msg::ReturnTask(task.clone()));
+                    Mode::Edit(task_id) => {
+                        self.state.saving = true;
+                        let task_committed_callback = self.link.callback(|response: FetchResponse<Task>| {
+                            if let (_, Json(Ok(task))) = response.into_parts() {
+                                Msg::ReturnTask(task)
+                            } else {
+                                // TODO: error
+                                ConsoleService::error("Failed to save task");
+                                Msg::CancelEdit
+                            }
+                        });
+                        self.save_task_fetch = Some(update_task(*task_id, self.state.task.clone(), task_committed_callback));
                     }
                 };
                 true
@@ -214,14 +207,12 @@ impl Component for TaskEditor {
         let on_save = self.link.callback(|_| {Msg::SaveTask});
         let on_cancel = self.link.callback(|_| {Msg::CancelEdit});
 
-        let freq = match &self.state.mode {
-            Mode::Create(task) => &task.frequency,
-            Mode::Edit(task) => &task.frequency,
-        };
+        let freq = &self.state.task.frequency;
 
         let by_when_selector = match freq {
-            TaskInterval::Days{every} => html!{<></>},
-            TaskInterval::Weeks{every, weekday} => {
+            TaskInterval::Days{every:_} => html!{<></>},
+            TaskInterval::Weeks{every:_, weekday:_} => {
+                ConsoleService::log("WEEK!");
                 let edit_by = self.link.callback(|input: ChangeData| {
                     ConsoleService::log(format!("onchange data: {:#?}", input).as_str());
                     match input {
@@ -246,6 +237,7 @@ impl Component for TaskEditor {
                 }
             },
             TaskInterval::Months{every:_, day_of_month:_} => {
+                ConsoleService::log("MONTH!");
                 let edit_by = self.link.callback(|input: InputData| {Msg::UpdateFrequencyBy(input.value)});
                 html!{
                     <>
@@ -268,7 +260,7 @@ impl Component for TaskEditor {
         let frequency_selector = html! {
             <div>
                 <span class="text">{"Do every "}</span>
-                <input class="input" type="number" oninput={edit_every} />
+                <input class="input" type="number" oninput={edit_every} value={self.state.task.bspts} />
                 <select onchange={edit_time_unit}>
                     <option value="d">{"Days"}</option>
                     <option value="w">{"Weeks"}</option>
@@ -281,11 +273,18 @@ impl Component for TaskEditor {
         html! {
             <div class="form">
                 <div>
-                    <input type="text" class="title-input" oninput={edit_name} maxlength="20" placeholder="Task Name" />
+                    <input
+                        type="text"
+                        class="title-input"
+                        oninput={edit_name}
+                        maxlength="20"
+                        placeholder="Task Name"
+                        value={self.state.task.name.clone()}
+                    />
                 </div>
                 <div>
                     <span class="text">{"Is worth "}</span>
-                    <input class="input" type="number" oninput={edit_bspts} />
+                    <input class="input" type="number" oninput={edit_bspts} value={self.state.task.bspts} />
                     <span class="text">{" bs points"}</span>
                 </div>
                 {frequency_selector}
@@ -294,6 +293,7 @@ impl Component for TaskEditor {
                     class="description-input"
                     oninput={edit_desc}
                     placeholder="Optionally describe the task"
+                    value={self.state.task.description.clone()}
                 /></div>
                 <div class="button-line">
                     <span class="cancel button" onclick={on_cancel}>{"Cancel"}</span>

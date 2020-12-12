@@ -101,7 +101,7 @@ h1 {
 
 /* Styles for the popups */
 .pop-up-screen {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
@@ -110,17 +110,19 @@ h1 {
     z-index: 3;
     display: flex;
     align-items: center;
+    overflow: scroll;
 }
 
 .popup {
-    background-color: white;
     margin: auto;
-    padding: 20px;
-    border-radius: 5px;
     max-width: 70%;
 }
 
 .pop-up-content {
+    background-color: white;
+    padding: 20px;
+    margin: 20px;
+    border-radius: 5px;
     width: 100%;
 }
 

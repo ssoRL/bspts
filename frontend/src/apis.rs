@@ -69,7 +69,6 @@ pub fn sign_up(new_user: NewUser, callback: FetchCallback<User>) -> FetchTask  {
 /// Get a list of all of the tasks
 pub fn get_tasks(callback: FetchCallback<Vec<Task>>) -> FetchTask {
     let get = Request::get("/task")
-        .header("auth", "")
         .body(Nothing)
         .unwrap();
     FetchService::fetch(get, callback).unwrap()
@@ -79,7 +78,15 @@ pub fn get_tasks(callback: FetchCallback<Vec<Task>>) -> FetchTask {
 pub fn commit_new_task(new_task: NewTask, callback: FetchCallback<Task>) -> FetchTask {
         let post = Request::post("/task")
             .header("Content-Type", "application/json")
-            .header("auth", "")
+            .body(Json(&new_task))
+            .unwrap();
+        FetchService::fetch(post, callback).unwrap()
+}
+
+/// Update a task
+pub fn update_task(task_id: i32, new_task: NewTask, callback: FetchCallback<Task>) -> FetchTask {
+        let post = Request::put(format!("/task/{}", task_id))
+            .header("Content-Type", "application/json")
             .body(Json(&new_task))
             .unwrap();
         FetchService::fetch(post, callback).unwrap()

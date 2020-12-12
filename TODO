@@ -10,7 +10,7 @@ yew tests (Might have to do some original work here X_X)
 reformat use (just fmt in general??)
 
 FEATURES:
-edit a task
+edit frequency
 delete a task
 styling for no auth page
 styling for task edit

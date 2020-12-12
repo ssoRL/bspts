@@ -1,8 +1,11 @@
 use data::task::Task;
 use yew::prelude::*;
+use crate::components::{Popup, TaskEditor};
 
 pub struct TaskItem {
+    state: State,
     props: Props,
+    link: ComponentLink<Self>
 }
 
 #[derive(Properties, Clone)]
@@ -11,16 +14,43 @@ pub struct Props {
     pub on_tick: Callback<()>,
 }
 
+pub struct State {
+    edit_popup: bool,
+}
+
+pub enum Msg {
+    EditTask,
+    Update(Task),
+    CancelEdit,
+}
+
 impl Component for TaskItem {
-    type Message = ();
+    type Message = Msg;
     type Properties = Props;
 
-    fn create(props: Self::Properties, _link: ComponentLink<Self>) -> Self {
-        Self { props }
+    fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
+        let state = State {
+            edit_popup: false,
+        };
+        Self { state, props, link }
     }
 
-    fn update(&mut self, _msg: Self::Message) -> ShouldRender {
-        true
+    fn update(&mut self, msg: Self::Message) -> ShouldRender {
+        match msg {
+            Msg::EditTask => {
+                self.state.edit_popup = true;
+                true
+            }
+            Msg::Update(task) => {
+                self.state.edit_popup = false;
+                self.props.task = task;
+                true
+            }
+            Msg::CancelEdit => {
+                self.state.edit_popup = false;
+                true
+            }
+        }
     }
 
     fn change(&mut self, _props: Self::Properties) -> ShouldRender {
@@ -59,6 +89,8 @@ impl Component for TaskItem {
         //  let do_by = format!("Do by {}", do_by_desc);
         let do_by = "Do by today".to_string();
 
+        let click_edit = self.link.callback(|_| {Msg::EditTask});
+
         html! {
             <div
                 class={format!("badge task-item {}", is_done_class)}
@@ -73,10 +105,27 @@ impl Component for TaskItem {
                 </div>
                 <i class="thumbnail fas fa-coffee"></i>
                 <div class="buttons">
-                    <span class="edit button">{"Edit"}</span>
+                    <span class="edit button" onclick={click_edit}>{"Edit"}</span>
                     <span class="flex-buffer"></span>
                     <span class="done button">{"Done"}</span>
                 </div>
+                {
+                    if self.state.edit_popup {
+                        let save_edits = self.link.callback(|edited_task| {Msg::Update(edited_task)});
+                        let cancel_edits = self.link.callback(|_| {Msg::CancelEdit});
+                        html! {
+                            <Popup>
+                                <TaskEditor
+                                    on_create={save_edits}
+                                    on_cancel={cancel_edits}
+                                    task_to_edit={Some(self.props.task.clone())}
+                                />
+                            </Popup>
+                        }
+                    } else {
+                        html! {<></>}
+                    }
+                }
             </div>
         }
     }
