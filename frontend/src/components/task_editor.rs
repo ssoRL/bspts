@@ -92,8 +92,9 @@ impl Component for TaskEditor {
                 false
             }
             Msg::UpdatePoints(bspts_as_string) => {
-                let bspts = bspts_as_string.parse::<i32>().unwrap();
-                self.state.task.bspts = bspts;
+                if let Ok(bspts) = bspts_as_string.parse::<i32>() {
+                    self.state.task.bspts = bspts;
+                }
                 false
             }
             Msg::UpdateDescription(desc) => {
