@@ -37,11 +37,12 @@ pub enum Msg {
     UpdatePoints(String),
     UpdateDescription(String),
     UpdateFrequencyUnit(String),
-    UpdateFrequencyEvery(String),
-    UpdateFrequencyBy(String),
+    UpdateFrequencyEvery(u32),
+    UpdateFrequencyBy(u32),
     SaveTask,
     ReturnTask(Task),
     CancelEdit,
+    Noop,
 }
 
 impl Component for TaskEditor {
@@ -119,8 +120,7 @@ impl Component for TaskEditor {
                 true
             }
             // Change between days, weeks, months
-            Msg::UpdateFrequencyEvery(every_as_string) => {
-                let new_every = every_as_string.parse::<u32>().unwrap();
+            Msg::UpdateFrequencyEvery(new_every) => {
                 let current_freq = &self.state.task.frequency;
                 let new_freq = match current_freq {
                     TaskInterval::Days{every:_} => TaskInterval::Days{every: new_every},
@@ -137,8 +137,7 @@ impl Component for TaskEditor {
                 false
             }
             // Change between days, weeks, months
-            Msg::UpdateFrequencyBy(by_as_string) => {
-                let new_by = by_as_string.parse::<u32>().unwrap();
+            Msg::UpdateFrequencyBy(new_by) => {
                 let current_freq = &self.state.task.frequency;
                 let new_freq = match current_freq {
                     TaskInterval::Days{every} => TaskInterval::Days{every: *every},
@@ -193,6 +192,9 @@ impl Component for TaskEditor {
                 self.props.on_cancel.emit(());
                 true
             }
+            Msg::Noop => {
+                false
+            }
         }
     }
 
@@ -204,7 +206,12 @@ impl Component for TaskEditor {
         let edit_name = self.link.callback(|input: InputData| {Msg::UpdateName(input.value)});
         let edit_bspts = self.link.callback(|input: InputData| {Msg::UpdatePoints(input.value)});
         let edit_desc = self.link.callback(|input: InputData| {Msg::UpdateDescription(input.value)});
-        let edit_every = self.link.callback(|input: InputData| {Msg::UpdateFrequencyEvery(input.value)});
+        let edit_every = self.link.callback(|input: InputData| {
+            match input.value.parse::<u32>() {
+                Ok(every) => Msg::UpdateFrequencyEvery(every),
+                Err(_) => Msg::Noop
+            }
+        });
         let on_save = self.link.callback(|_| {Msg::SaveTask});
         let on_cancel = self.link.callback(|_| {Msg::CancelEdit});
 
@@ -212,38 +219,52 @@ impl Component for TaskEditor {
 
         let by_when_selector = match freq {
             TaskInterval::Days{every:_} => html!{<></>},
-            TaskInterval::Weeks{every:_, weekday:_} => {
+            TaskInterval::Weeks{every:_, weekday} => {
                 ConsoleService::log("WEEK!");
                 let edit_by = self.link.callback(|input: ChangeData| {
-                    ConsoleService::log(format!("onchange data: {:#?}", input).as_str());
                     match input {
-                        ChangeData::Value(val) => Msg::UpdateFrequencyBy(val),
+                        ChangeData::Select(select) => {
+                            Msg::UpdateFrequencyBy(select.selected_index() as u32)
+                        },
                         _ => panic!("can't get change data value")
                     }
-                    
                 });
                 html!{
                     <>
                         <span class="text">{" on "}</span>
                         <select onchange={edit_by}>
-                            <option value="0">{"Monday"}</option>
-                            <option value="1">{"Tuesday"}</option>
-                            <option value="2">{"Wednesday"}</option>
-                            <option value="3">{"Thursday"}</option>
-                            <option value="4">{"Friday"}</option>
-                            <option value="5">{"Saturday"}</option>
-                            <option value="6">{"Sunday"}</option>
+                            <option selected={*weekday==0}>{"Monday"}</option>
+                            <option selected={*weekday==1}>{"Tuesday"}</option>
+                            <option selected={*weekday==2}>{"Wednesday"}</option>
+                            <option selected={*weekday==3}>{"Thursday"}</option>
+                            <option selected={*weekday==4}>{"Friday"}</option>
+                            <option selected={*weekday==5}>{"Saturday"}</option>
+                            <option selected={*weekday==6}>{"Sunday"}</option>
                         </select>
                     </>
                 }
             },
-            TaskInterval::Months{every:_, day_of_month:_} => {
+            TaskInterval::Months{every:_, day_of_month} => {
                 ConsoleService::log("MONTH!");
-                let edit_by = self.link.callback(|input: InputData| {Msg::UpdateFrequencyBy(input.value)});
+                let edit_by = self.link.callback(|input: InputData| {
+                    match input.value.parse::<u32>() {
+                        Ok(day_of_month) => {
+                            Msg::UpdateFrequencyBy(day_of_month)
+                        }
+                        Err(_) => Msg::Noop
+                    }
+                });
                 html!{
                     <>
                         <span class="text">{" on the "}</span>
-                        <input class="input" type="number" min="1" max="5" oninput={edit_by} />
+                        <input
+                            class="input"
+                            type="number"
+                            min="1"
+                            max="28"
+                            oninput={edit_by}
+                            value={day_of_month}
+                        />
                         <span class="text">{" of the month"}</span>
                     </>
                 }
@@ -252,20 +273,24 @@ impl Component for TaskEditor {
 
 
         let edit_time_unit = self.link.callback(|input: ChangeData| {
-            ConsoleService::log(format!("onchange data: {:#?}", input).as_str());
             match input {
-                ChangeData::Value(val) => Msg::UpdateFrequencyUnit(val),
+                ChangeData::Select(select) => Msg::UpdateFrequencyUnit(select.value()),
                 _ => panic!("can't get change data value")
             }
         });
         let frequency_selector = html! {
             <div>
                 <span class="text">{"Do every "}</span>
-                <input class="input" type="number" oninput={edit_every} value={self.state.task.bspts} />
+                <input
+                    class="input"
+                    type="number"
+                    oninput={edit_every}
+                    value={self.state.task.frequency.every()}
+                />
                 <select onchange={edit_time_unit}>
-                    <option value="d">{"Days"}</option>
-                    <option value="w">{"Weeks"}</option>
-                    <option value="m">{"Months"}</option>
+                    <option selected={self.state.task.frequency.in_days()} value="d">{"Days"}</option>
+                    <option selected={self.state.task.frequency.in_weeks()} value="w">{"Weeks"}</option>
+                    <option selected={self.state.task.frequency.in_months()} value="m">{"Months"}</option>
                 </select>
                 {by_when_selector}
             </div>

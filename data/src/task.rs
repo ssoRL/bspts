@@ -24,6 +24,38 @@ pub enum TaskInterval {
     Months{every: u32, day_of_month: u32},
 }
 
+impl TaskInterval {
+    /// Returns how often this is called
+    pub fn every(self: &Self) -> u32 {
+        match self {
+            Self::Days{every} => *every,
+            Self::Weeks{every, weekday:_} => *every,
+            Self::Months{every, day_of_month:_} => *every,
+        }
+    }
+
+    pub fn in_days(self: &Self) -> bool {
+        match self {
+            Self::Days{every:_} => true,
+            _ => false,
+        }
+    }
+
+    pub fn in_weeks(self: &Self) -> bool {
+        match self {
+            Self::Weeks{every:_, weekday:_} => true,
+            _ => false,
+        }
+    }
+
+    pub fn in_months(self: &Self) -> bool {
+        match self {
+            Self::Months{every:_, day_of_month:_} => true,
+            _ => false,
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct Task {
     pub id: i32,
