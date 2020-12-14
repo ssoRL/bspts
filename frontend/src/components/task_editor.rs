@@ -1,7 +1,10 @@
 use data::task::*;
-use yew::services::console::{ConsoleService};
+use yew::services::{
+    dialog::DialogService,
+    console::{ConsoleService},
+};
 use yew::format::{Json};
-use crate::apis::{commit_new_task, update_task, FetchResponse};
+use crate::apis::{commit_new_task, update_task, delete_task, FetchResponse};
 use yew::services::fetch::{FetchTask};
 use yew::prelude::*;
 
@@ -9,14 +12,25 @@ pub struct TaskEditor {
     state: State,
     props: Props,
     link: ComponentLink<Self>,
-    save_task_fetch: Option<FetchTask>,
+    /// The current fetch action going on if any
+    fetch_action: Option<FetchTask>,
+}
+
+/// The result of this edit
+pub enum EditResult {
+    /// Edit/create succeeded. Return new task
+    Return(Task),
+    /// The creation was canceled with no effect
+    Cancel,
+    /// The task was destroyed
+    Destroy,
 }
 
 #[derive(Properties, Clone)]
 pub struct Props {
+    /// A task to edit, or none to create a new task
     pub task_to_edit: Option<Task>,
-    pub on_create: Callback<Task>,
-    pub on_cancel: Callback<()>,
+    pub on_done: Callback<EditResult>,
 }
 
 /// THe mode the task editor is in: create a new task or edit and existing
@@ -28,7 +42,6 @@ pub enum Mode {
 
 pub struct State {
     pub mode: Mode,
-    pub saving: bool,
     task: NewTask,
 }
 
@@ -41,6 +54,8 @@ pub enum Msg {
     UpdateFrequencyBy(u32),
     SaveTask,
     ReturnTask(Task),
+    DeleteTask,
+    TaskDeleted,
     CancelEdit,
     Noop,
 }
@@ -73,16 +88,14 @@ impl Component for TaskEditor {
         Self {
             state : State{
                 mode,
-                saving: false,
                 task: task_to_edit,
             },
             props: Props {
                 task_to_edit: None,
-                on_create: properties.on_create,
-                on_cancel: properties.on_cancel,
+                on_done: properties.on_done,
             },
             link,
-            save_task_fetch: None,
+            fetch_action: None,
         }
     }
 
@@ -156,7 +169,6 @@ impl Component for TaskEditor {
             Msg::SaveTask => {
                 match &self.state.mode {
                     Mode::Create => {
-                        self.state.saving = true;
                         let task_committed_callback = self.link.callback(|response: FetchResponse<Task>| {
                             if let (_, Json(Ok(task))) = response.into_parts() {
                                 Msg::ReturnTask(task)
@@ -166,10 +178,9 @@ impl Component for TaskEditor {
                                 Msg::CancelEdit
                             }
                         });
-                        self.save_task_fetch = Some(commit_new_task(self.state.task.clone(), task_committed_callback));
+                        self.fetch_action = Some(commit_new_task(self.state.task.clone(), task_committed_callback));
                     }
                     Mode::Edit(task_id) => {
-                        self.state.saving = true;
                         let task_committed_callback = self.link.callback(|response: FetchResponse<Task>| {
                             if let (_, Json(Ok(task))) = response.into_parts() {
                                 Msg::ReturnTask(task)
@@ -179,17 +190,45 @@ impl Component for TaskEditor {
                                 Msg::CancelEdit
                             }
                         });
-                        self.save_task_fetch = Some(update_task(*task_id, self.state.task.clone(), task_committed_callback));
+                        self.fetch_action = Some(update_task(*task_id, self.state.task.clone(), task_committed_callback));
                     }
                 };
                 true
             }
             Msg::ReturnTask(task) => {
-                self.props.on_create.emit(task);
+                self.props.on_done.emit(EditResult::Return(task));
+                true
+            }
+            Msg::DeleteTask => {
+                let should_delete = DialogService::confirm(format!(
+                    "Are you sure you want to destroy task {}?",
+                    self.state.task.name
+                ).as_str());
+                if should_delete {
+                    if let Mode::Edit(id) = self.state.mode {
+                        let after_task_deleted = self.link.callback(|response: FetchResponse<()>| {
+                            if let (_, Json(Ok(()))) = response.into_parts() {
+                                Msg::TaskDeleted
+                            } else {
+                                // TODO: error, don't just leave w/out explanation
+                                ConsoleService::error("Failed to delete task");
+                                Msg::CancelEdit
+                            }
+                        });
+                        let delete_task = delete_task(id ,after_task_deleted);
+                        self.fetch_action = Some(delete_task);
+                    }
+                    true
+                } else {
+                    false
+                }
+            }
+            Msg::TaskDeleted => {
+                self.props.on_done.emit(EditResult::Destroy);
                 true
             }
             Msg::CancelEdit => {
-                self.props.on_cancel.emit(());
+                self.props.on_done.emit(EditResult::Cancel);
                 true
             }
             Msg::Noop => {
@@ -203,6 +242,12 @@ impl Component for TaskEditor {
     }
 
     fn view(&self) -> Html {
+        if let Some(_) = self.fetch_action {
+            // If there's something going on, block the form
+            // TODO: Make this not look terrible
+            return html! {"Working..."}
+        }
+
         let edit_name = self.link.callback(|input: InputData| {Msg::UpdateName(input.value)});
         let edit_bspts = self.link.callback(|input: InputData| {Msg::UpdatePoints(input.value)});
         let edit_desc = self.link.callback(|input: InputData| {Msg::UpdateDescription(input.value)});
@@ -296,6 +341,18 @@ impl Component for TaskEditor {
             </div>
         };
 
+        let delete_this_task = if let Mode::Create = self.state.mode {
+            // Don't allow destroying a task that doesn't exist
+            html! { <></> }
+        } else {
+            let on_destroy = self.link.callback(|_| {Msg::DeleteTask});
+
+            html! { <div class="badge-line">
+                <span class="flex-buffer" />
+                <a class="delete" onclick={on_destroy}>{"Delete this task"}</a>
+            </div>}
+        };
+
         html! {
             <div class="form">
                 <div>
@@ -326,6 +383,7 @@ impl Component for TaskEditor {
                     <span class="flex-buffer"></span>
                     <span class="save button" onclick={on_save}>{"Save"}</span>
                 </div>
+                {delete_this_task}
             </div>
         }
     }

@@ -74,7 +74,7 @@ pub fn get_tasks(callback: FetchCallback<Vec<Task>>) -> FetchTask {
     FetchService::fetch(get, callback).unwrap()
 }
 
-/// Commits a new task to 
+/// Commits to a new task
 pub fn commit_new_task(new_task: NewTask, callback: FetchCallback<Task>) -> FetchTask {
         let post = Request::post("/task")
             .header("Content-Type", "application/json")
@@ -84,10 +84,17 @@ pub fn commit_new_task(new_task: NewTask, callback: FetchCallback<Task>) -> Fetc
 }
 
 /// Update a task
-pub fn update_task(task_id: i32, new_task: NewTask, callback: FetchCallback<Task>) -> FetchTask {
+pub fn update_task(task_id: i32, task_edits: NewTask, callback: FetchCallback<Task>) -> FetchTask {
         let post = Request::put(format!("/task/{}", task_id))
             .header("Content-Type", "application/json")
-            .body(Json(&new_task))
+            .body(Json(&task_edits))
             .unwrap();
         FetchService::fetch(post, callback).unwrap()
+}
+
+pub fn delete_task(task_id: i32, callback: FetchCallback<()>) -> FetchTask {
+        let delete = Request::delete(format!("/task/{}", task_id))
+            .body(Nothing)
+            .unwrap();
+        FetchService::fetch(delete, callback).unwrap()
 }

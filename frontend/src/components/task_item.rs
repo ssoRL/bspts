@@ -1,6 +1,6 @@
 use data::task::Task;
 use yew::prelude::*;
-use crate::components::{Popup, TaskEditor};
+use crate::components::{Popup, TaskEditor, EditResult};
 
 pub struct TaskItem {
     state: State,
@@ -15,13 +15,17 @@ pub struct Props {
 }
 
 pub struct State {
+    /// Show the pop up used to edit this task
     edit_popup: bool,
+    /// Don't show this task
+    is_removed: bool,
 }
 
 pub enum Msg {
     EditTask,
     Update(Task),
     CancelEdit,
+    DestroySelf,
 }
 
 impl Component for TaskItem {
@@ -31,6 +35,7 @@ impl Component for TaskItem {
     fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
         let state = State {
             edit_popup: false,
+            is_removed: false,
         };
         Self { state, props, link }
     }
@@ -50,6 +55,10 @@ impl Component for TaskItem {
                 self.state.edit_popup = false;
                 true
             }
+            Msg::DestroySelf => {
+                self.state.is_removed = true;
+                true
+            }
         }
     }
 
@@ -58,6 +67,11 @@ impl Component for TaskItem {
     }
 
     fn view(&self) -> Html {
+        if self.state.is_removed {
+            // If this task is removed from the flow, don't render it
+            return html!{ <></> }
+        }
+
         let on_tick = self.props.on_tick.reform(|_| ());
         let task = &self.props.task;
 
@@ -97,21 +111,26 @@ impl Component for TaskItem {
                 <div class="info">{pts_desc}</div>
                 <div class="sub-info">{do_by}</div>
                 <i class="thumbnail fas fa-coffee"></i>
-                <div class="buttons">
+                <div class="badge-line">
                     <span class="edit button" onclick={click_edit}>{"Edit"}</span>
                     <span class="flex-buffer"></span>
                     <span class="done button">{"Done"}</span>
                 </div>
                 {
                     if self.state.edit_popup {
-                        let save_edits = self.link.callback(|edited_task| {Msg::Update(edited_task)});
-                        let cancel_edits = self.link.callback(|_| {Msg::CancelEdit});
+                        let on_done = self.link.callback(|result: EditResult| {
+                            match result {
+                                EditResult::Return(task) => Msg::Update(task),
+                                EditResult::Cancel => Msg::CancelEdit,
+                                EditResult::Destroy => Msg::DestroySelf,
+                            }
+                        });
+                        
                         html! {
                             <Popup>
                                 <TaskEditor
-                                    on_create={save_edits}
-                                    on_cancel={cancel_edits}
                                     task_to_edit={Some(self.props.task.clone())}
+                                    on_done={on_done}
                                 />
                             </Popup>
                         }

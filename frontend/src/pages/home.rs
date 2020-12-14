@@ -1,7 +1,7 @@
 use yew::prelude::*;
 use data::task::{Task};
 use crate::apis::{get_tasks, sign_out_frontend, FetchResponse};
-use crate::components::{TaskItem, TaskEditor, Popup};
+use crate::components::{TaskItem, TaskEditor, EditResult, Popup};
 use yew::format::{Json};
 use yew::services::fetch::{FetchTask};
 use yew::services::console::{ConsoleService};
@@ -145,11 +145,17 @@ impl Component for Home {
         };
 
         let new_task_html = if self.state.edit_popup {
-            let on_create = self.link.callback(|task: Task| {Msg::NewTaskCommitted(task)});
-            let on_cancel = self.link.callback(|_| {Msg::CancelCreateTask});
+            let on_done = self.link.callback(|result: EditResult| {
+                match result {
+                    EditResult::Return(task) => Msg::NewTaskCommitted(task),
+                    _ => Msg::CancelCreateTask
+                }
+                
+            });
+
             html! {
                 <Popup>
-                    <TaskEditor task_to_edit={None} on_create={on_create} on_cancel={on_cancel} />
+                    <TaskEditor task_to_edit={None} on_done={on_done} />
                 </Popup>
             }
         } else {

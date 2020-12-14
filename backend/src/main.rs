@@ -28,6 +28,7 @@ async fn main() -> std::io::Result<()> {
             .service(task_route)
             .service(commit_new_task_route)
             .service(update_task_route)
+            .service(delete_task_route)
             .service(sign_in_route)
             .service(sign_up_route)
             .service(fs::Files::new("/", "./site").index_file("index.html"))

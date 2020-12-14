@@ -3,5 +3,5 @@ mod task_editor;
 mod popup;
 
 pub use task_item::TaskItem;
-pub use task_editor::TaskEditor;
+pub use task_editor::{TaskEditor, EditResult};
 pub use popup::Popup;

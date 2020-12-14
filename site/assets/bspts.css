@@ -40,6 +40,14 @@ h1 {
     font-family: sans-serif;
 }
 
+.badge-line {
+    width: 90%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    font-family: sans-serif;
+}
+
 /* Generic styles */
 .flex-buffer {
     flex-grow: 1;
@@ -82,19 +90,12 @@ h1 {
     color: green;
 }
 
-.task-item .buttons {
-    width: 95%;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-}
-
-.task-item .buttons .edit {
+.task-item .edit {
     padding: 8px 18px;
     border: 2px solid green;
 }
 
-.task-item .buttons .done {
+.task-item .done {
     padding: 10px 20px;
     background-color: green;
     color: white;
@@ -161,4 +162,15 @@ h1 {
 .form .cancel.button {
     padding: 8px 18px;
     border: 2px solid var(--text-color);
+}
+
+.form .delete {
+    font-size: 20px;
+    text-align: right;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.form .delete:hover {
+    color: darkred;
 }
