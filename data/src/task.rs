@@ -63,6 +63,7 @@ pub struct Task {
     pub description: String,
     pub bspts: i32,
     pub is_done: bool,
+    pub days_to_next_reset: i64,
     pub next_reset: NaiveDate,
     pub frequency: TaskInterval,
 }

@@ -62,32 +62,28 @@ impl Component for TaskItem {
         let task = &self.props.task;
 
         let is_done_class = if task.is_done {
-            "completed"
-         }else {
-            "uncompleted"
-         };
+           "completed"
+        }else {
+           "uncompleted"
+        };
 
-         let pts_desc = match task.bspts {
-            1 => "1 pt".to_string(),
-            pts => format!("{} pts", pts),
-         };
+        let pts_desc = match task.bspts {
+           1 => "1 pt".to_string(),
+           pts => format!("{} pts", pts),
+        };
 
-         // TODO: Actually fuck with this
-         //let today = Local::today().naive_local();
-         //let due_in = today.signed_duration_since(task.next_reset);
-        //  let due = task.next_reset.expect("Look, this can't actually be none");
-        //  let do_by_desc = match 1 {
-        //     days if days < 0 => "Yesterday".to_string(),
-        //     0 | 1 => "today".to_string(),
-        //     2 => "tomorrow".to_string(),
-        //     3 ..= 7 => {
-        //         // It's in the next week, therefore just say eg "next Saturday"
-        //         format!("next {}", due.format("%A"))
-        //     },
-        //     _ => due.format("%-d %B, %C%y").to_string()
-        //  };
-        //  let do_by = format!("Do by {}", do_by_desc);
-        let do_by = "Do by today".to_string();
+        let do_by_description = match task.days_to_next_reset {
+           days if days < 0 => "yesterday".to_string(),
+           0 => "today".to_string(),
+           1 => "tomorrow".to_string(),
+           // It's in the next week, therefore just say eg "next Saturday"
+           2 ..= 7 => format!("next {}", task.next_reset.format("%A")),
+           // In the next year use string like "January 13"
+           8 ..= 360 => task.next_reset.format("%B %-d").to_string(),
+           // Not for a long time, just show iso 8601 format
+           _ => task.next_reset.format("%F").to_string(),
+        };
+        let do_by = format!("Do by {}", do_by_description);
 
         let click_edit = self.link.callback(|_| {Msg::EditTask});
 
@@ -98,11 +94,8 @@ impl Component for TaskItem {
                 title={&task.description}
             >
                 <div class="task-name">{&task.name}</div>
-                <div class="info-line">
-                    <span class="points">{pts_desc}</span>
-                    <span class="flex-buffer"></span>
-                    <span class="do-by">{do_by}</span>
-                </div>
+                <div class="info">{pts_desc}</div>
+                <div class="info">{do_by}</div>
                 <i class="thumbnail fas fa-coffee"></i>
                 <div class="buttons">
                     <span class="edit button" onclick={click_edit}>{"Edit"}</span>

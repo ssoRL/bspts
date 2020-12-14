@@ -46,6 +46,12 @@ fn calc_next_reset(frequency: &TaskInterval) -> NaiveDate {
     }
 }
 
+fn get_days_to_next_reset(next_reset: NaiveDate) -> i64 {
+    let today = Local::today().naive_local();
+    let duration = next_reset - today;
+    duration.num_days()
+}
+
 fn query_task_to_task(qt: &QTask) -> Task {
     let frequency = match qt.time_unit.as_str() {
         DAYS => {
@@ -68,6 +74,7 @@ fn query_task_to_task(qt: &QTask) -> Task {
         description: qt.description.clone(),
         bspts: qt.bspts,
         is_done: qt.is_done,
+        days_to_next_reset: get_days_to_next_reset(qt.next_reset),
         next_reset: qt.next_reset,
         frequency,
     }
