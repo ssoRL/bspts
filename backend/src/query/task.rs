@@ -175,3 +175,18 @@ pub fn update_task(task_id: i32, new_task: NewTask, conn: &PgPooledConnection) -
 
     Ok(query_task_to_task(&committed_task))
 }
+
+pub fn delete_task(task_id: i32, conn: &PgPooledConnection) -> Result<()> {
+    use crate::schema::tasks::dsl::tasks;
+
+    match diesel::delete(tasks.find(task_id)).execute(conn) {
+        Ok(_) => Ok(()),
+        Err(_) => {
+            let error = error::InternalError::new(
+                format!("Could not delete task {}", task_id),
+                StatusCode::BAD_REQUEST,
+            );
+            return Err(error.into())
+        }
+    }
+}

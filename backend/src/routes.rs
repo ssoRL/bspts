@@ -1,5 +1,6 @@
 use actix_web::{
     get,
+    delete,
     post,
     put,
     error,
@@ -85,9 +86,21 @@ async fn update_task_route(
     data: Data<PgPool>,
     ses: Session
 ) -> Rsp<Task> {
-    with_auth(ses, data, |_user, conn| {
+    with_auth(ses, data, |_, conn| {
         let Json(task_updates) = payload;
         let updated_task = update_task(id, task_updates, &conn)?;
         Ok(Json(updated_task))
+    })
+}
+
+#[delete("/task/{id}")]
+async fn delete_task_route(
+    web::Path(id): web::Path<i32>,
+    data: Data<PgPool>,
+    ses: Session
+) -> Rsp<()> {
+    with_auth(ses, data, |_, conn| {
+        delete_task(id, &conn)?;
+        Ok(Json(()))
     })
 }

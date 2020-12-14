@@ -174,3 +174,64 @@ async fn update_task() {
     let body: Task = test::read_body_json(put_resp).await;
     assert_eq!(body.bspts, new_pts);
 }
+
+#[actix_rt::test]
+async fn delete_task() {
+    let user = make_user("delete_task");
+    let pool = get_connection_pool();
+    let session_cookie = login(&user, &pool).await.expect("Failed to login");
+    let mut app = make_service(
+        |c| {
+            c.service(routes::task_route);
+            c.service(routes::commit_new_task_route);
+            c.service(routes::delete_task_route);
+        },
+        &pool
+    ).await;
+    let task = NewTask {
+        name: "TaskName".to_string(),
+        description: "".to_string(),
+        bspts: 1,
+        frequency: TaskInterval::Days{every: 3},
+    };
+    let set_req = test::TestRequest::with_header("content-type", "text/plain")
+        .uri("/task")
+        .method(Method::POST)
+        .cookie(session_cookie.clone())
+        .set_json(&task)
+        .to_request();
+    let set_resp = test::call_service(&mut app, set_req).await;
+    println!("{:#?}", set_resp);
+    // First ensure that the call returned OK
+    assert!(set_resp.status().is_success());
+    let saved_task: Task = test::read_body_json(set_resp).await;
+    // Now make a call to delete the task
+    let delete_req = test::TestRequest::with_header("content-type", "text/plain")
+        .uri(format!("/task/{}", saved_task.id).as_str())
+        .method(Method::DELETE)
+        .cookie(session_cookie.clone())
+        .to_request();
+    let delete_resp = test::call_service(&mut app, delete_req).await;
+    println!("{:#?}", delete_resp);
+    // Ensure that the delete call returned OK
+    assert!(delete_resp.status().is_success());
+    // Finally get the whole list of tasks and make sure the
+    // deleted one is not included
+    let get_req = test::TestRequest::with_header("content-type", "text/plain")
+        .uri("/task")
+        .method(Method::GET)
+        .cookie(session_cookie)
+        .to_request();
+    let get_resp = test::call_service(&mut app, get_req).await;
+    assert!(get_resp.status().is_success());
+    let tasks: Vec<Task> = test::read_body_json(get_resp).await;
+    for task in tasks {
+        if task.id == saved_task.id {
+            panic!(format!(
+                "Failed to delete task with id {} for user {}",
+                task.id,
+                user.uname,
+            ))
+        }
+    }
+}

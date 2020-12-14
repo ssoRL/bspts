@@ -26,8 +26,8 @@ h1 {
 
 .badge {
     position: relative;
-    width: 215px;
-    height: 215px;
+    width: 210px;
+    height: 210px;
     margin: 20px;
     transition: all 200ms;
     background-color: palegreen;
@@ -70,6 +70,11 @@ h1 {
 
 .task-item .info {
     font-size: 20px;
+    font-weight: bold;
+}
+
+.task-item .sub-info {
+    font-size: 15px;
 }
 
 .task-item .thumbnail {

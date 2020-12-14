@@ -95,7 +95,7 @@ impl Component for TaskItem {
             >
                 <div class="task-name">{&task.name}</div>
                 <div class="info">{pts_desc}</div>
-                <div class="info">{do_by}</div>
+                <div class="sub-info">{do_by}</div>
                 <i class="thumbnail fas fa-coffee"></i>
                 <div class="buttons">
                     <span class="edit button" onclick={click_edit}>{"Edit"}</span>
