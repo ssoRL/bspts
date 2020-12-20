@@ -42,6 +42,52 @@ fn check_password(password: &str, user: &models::QUser) -> bool {
     stored_hash == &generated_hash.to_vec()
 }
 
+/// Returns the user with the given username
+fn get_q_user_by_id(user_id: i32, conn: &PgPooledConnection) -> Result<models::QUser> {
+    use crate::schema::users::dsl::*;
+    use diesel::query_dsl::filter_dsl::FilterDsl;
+
+    let q_users: Vec<models::QUser> = users
+        .filter(id.eq(user_id))
+        .load::<models::QUser>(conn)
+        .expect("Error getting users");
+
+    match &q_users[..] {
+        [] => {
+            let error = error::InternalError::new(
+                format!("Found no user with id {}", user_id),
+                StatusCode::NOT_FOUND
+            );
+            Err(error.into())
+        }
+        [q_user] =>  {
+            Ok(q_user.clone())
+        },
+        _ => {
+            let error = error::InternalError::new(
+                "Ambiguous user id".to_string(),
+                StatusCode::CONFLICT
+            );
+            Err(error.into())
+        }
+    }
+}
+
+fn update_q_user(q_user: models::QUser, conn: &PgPooledConnection) -> Result<models::QUser> {
+    use crate::schema::users::dsl::*;
+    use crate::diesel::query_dsl::filter_dsl::FindDsl;
+
+    diesel::update(users.find(q_user.id))
+        .set(&q_user)
+        .get_result(conn)
+        .map_err(|_| {
+            error::InternalError::new(
+                format!("Error updating for user {}", q_user.id),
+                StatusCode::BAD_REQUEST
+            ).into()
+        })
+}
+
 /// Returns the user if they are allowed to log in with that password, or an error otherwise
 pub fn login_user(user: NewUser, conn: &PgPooledConnection) -> Result<models::QUser> {
     use crate::schema::users::dsl::*;
@@ -103,4 +149,13 @@ pub fn save_new_user(user: &NewUser, conn: &PgPooledConnection) -> Result<models
         );
         error.into()
     })
+}
+
+/// Adds the provided number of points to the user's total
+/// Returns their total points after the addition
+pub fn update_bspts(user_id: i32, pts: i32, conn: &PgPooledConnection) -> Result<i32> {
+    let mut q_user = get_q_user_by_id(user_id, conn)?;
+    q_user.bspts += pts;
+    let updated_q_user = update_q_user(q_user, conn)?;
+    Ok(updated_q_user.bspts)
 }

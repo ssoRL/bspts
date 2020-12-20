@@ -26,6 +26,7 @@ table! {
         uname -> Text,
         password -> Bytea,
         salt -> Bytea,
+        bspts -> Int4,
     }
 }
 

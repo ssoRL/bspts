@@ -2,13 +2,14 @@ use chrono::{NaiveDate};
 use serde::{Deserialize, Serialize};
 use crate::schema::*;
 
-#[derive(Identifiable, Queryable, Deserialize, Serialize, Clone, Debug)]
+#[derive(Identifiable, Queryable, AsChangeset, Deserialize, Serialize, Clone, Debug)]
 #[table_name = "users"]
 pub struct QUser {
     pub id: i32,
     pub uname: String,
     pub password: Vec<u8>,
     pub salt: Vec<u8>,
+    pub bspts: i32,
 }
 
 #[derive(Insertable)]

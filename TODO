@@ -10,10 +10,10 @@ yew tests (Might have to do some original work here X_X)
 reformat use (just fmt in general??)
 
 FEATURES:
-styling for no auth page
-check off task
+check off task frontend
 goodies
 set icons
+styling for no auth page
 better loading indicator
 signing out I guess
 input validation
@@ -36,4 +36,6 @@ nginx
     https://ubuntu.com/tutorials/install-and-configure-nginx#1-overview
     https://certbot.eff.org/lets-encrypt/ubuntufocal-nginx
     https://www.digitalocean.com/docs/networking/firewalls/how-to/manage-droplets/
+Actix testing
+atomically
     

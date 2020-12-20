@@ -61,6 +61,7 @@ pub struct Task {
     pub id: i32,
     pub name: String,
     pub description: String,
+    pub user_id: i32,
     pub bspts: i32,
     pub is_done: bool,
     pub days_to_next_reset: i64,

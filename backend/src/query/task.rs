@@ -4,6 +4,7 @@ use chrono::{NaiveDate, Local, Duration, Datelike};
 use crate::PgPooledConnection;
 use crate::models::*;
 use actix_web::{Result, error, http::StatusCode};
+use crate::query::{atomically, user};
 
 pub const DAYS: &str = "Days";
 pub const WEEKS: &str = "Weeks";
@@ -72,6 +73,7 @@ fn query_task_to_task(qt: &QTask) -> Task {
         id: qt.id,
         name: qt.name.clone(),
         description: qt.description.clone(),
+        user_id: qt.user_id,
         bspts: qt.bspts,
         is_done: qt.is_done,
         days_to_next_reset: get_days_to_next_reset(qt.next_reset),
@@ -88,15 +90,33 @@ pub fn get_tasks(user: QUser, conn: &PgPooledConnection) -> Vec<Task> {
     q_tasks.iter().map(query_task_to_task).collect()
 }
 
-fn get_q_task(task_id: i32, conn: &PgPooledConnection) -> Option<QTask> {
+fn get_q_task(task_id: i32, conn: &PgPooledConnection) -> Result<QTask> {
     use crate::schema::tasks::dsl::*;
 
-    let mut q_task = tasks
+    let mut q_tasks = tasks
         .filter(id.eq(task_id))
         .load::<QTask>(conn)
-        .expect("Error getting users");
+        .map_err(|_| {
+            error::InternalError::new(
+                format!("Error querying for task {}", task_id),
+                StatusCode::BAD_REQUEST
+            )
+        })?;
     // Should be a vec of only one item, return that item
-    q_task.pop()
+    match q_tasks.pop() {
+        Some(q_task) => Ok(q_task),
+        None => {
+            Err(error::InternalError::new(
+                format!("No task with id {} could be found", task_id),
+                StatusCode::NOT_FOUND
+            ).into())
+        }
+    }
+}
+
+pub fn get_task(task_id: i32, conn: &PgPooledConnection) -> Result<Task> {
+    let q_task = get_q_task(task_id, conn)?;
+    Ok(query_task_to_task(&q_task))
 }
 
 /// Add a new task to the database
@@ -134,20 +154,24 @@ pub fn commit_new_task(new_task: NewTask, user: QUser, conn: PgPooledConnection)
     query_task_to_task(&committed_task)
 }
 
-/// Add a new task to the database
-pub fn update_task(task_id: i32, new_task: NewTask, conn: &PgPooledConnection) -> Result<Task> {
+/// Updates the task with task_id to the value q_task and returns the updated task
+fn update_q_task(q_task: &QTask, conn: &PgPooledConnection) -> Result<QTask> {
     use crate::schema::tasks::dsl::tasks;
 
-    let mut q_task: QTask = match get_q_task(task_id, &conn) {
-        Some(q) => q,
-        None => {
-            let error = error::InternalError::new(
-                "There's no task with that id".to_string(),
-                StatusCode::NOT_FOUND
-            );
-            return Err(error.into())
-        }
-    };
+    diesel::update(tasks.find(q_task.id))
+        .set(q_task)
+        .get_result(conn)
+        .map_err(|_| {
+            error::InternalError::new(
+                format!("Error updating for task {}", q_task.id),
+                StatusCode::BAD_REQUEST
+            ).into()
+        })
+}
+
+/// Add a new task to the database
+pub fn update_task(task_id: i32, new_task: NewTask, conn: &PgPooledConnection) -> Result<Task> {
+    let mut q_task = get_q_task(task_id, &conn)?;
 
     let (time_unit, every, by_when) = match new_task.frequency {
         TaskInterval::Days{every} => {
@@ -167,11 +191,8 @@ pub fn update_task(task_id: i32, new_task: NewTask, conn: &PgPooledConnection) -
     q_task.every = every;
     q_task.time_unit = time_unit.to_string();
     q_task.by_when = by_when;
-    
-    let committed_task: QTask = diesel::update(tasks.find(task_id))
-        .set(&q_task)
-        .get_result(conn)
-        .expect("Error updating task");
+
+    let committed_task = update_q_task(&q_task, conn)?;
 
     Ok(query_task_to_task(&committed_task))
 }
@@ -189,4 +210,15 @@ pub fn delete_task(task_id: i32, conn: &PgPooledConnection) -> Result<()> {
             return Err(error.into())
         }
     }
+}
+
+/// marks the task as complete and returns the number of points that the user has after completion
+pub fn complete_task(task_id: i32, conn: &PgPooledConnection) -> Result<i32> {
+    println!("Completing task {}", task_id);
+    let mut q_task = get_q_task(task_id, conn)?;
+    atomically(conn, || {
+        q_task.is_done = true;
+        let updated_q_task = update_q_task(&q_task, conn)?;
+        user::update_bspts(updated_q_task.user_id, updated_q_task.bspts, conn)
+    })
 }

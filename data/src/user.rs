@@ -8,8 +8,9 @@ pub struct NewUser {
     pub password: String,
 }
 
-/// The fields that are exposed in the JWT claim for a user
+/// The fields that are exposed to the user
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub struct User {
     pub uname: String,
+    pub bspts: i32,
 }

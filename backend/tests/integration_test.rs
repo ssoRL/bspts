@@ -235,3 +235,71 @@ async fn delete_task() {
         }
     }
 }
+
+#[actix_rt::test]
+async fn complete_task() {
+    let user = make_user("complete_task");
+    let pool = get_connection_pool();
+    let session_cookie = login(&user, &pool).await.expect("Failed to login");
+    let mut app = make_service(
+        |c| {
+            c.service(routes::get_user_route);
+            c.service(routes::get_task_route);
+            c.service(routes::commit_new_task_route);
+            c.service(routes::complete_task_route);
+        },
+        &pool
+    ).await;
+    let task_points = 1;
+    let task = NewTask {
+        name: "TaskName".to_string(),
+        description: "".to_string(),
+        bspts: task_points,
+        frequency: TaskInterval::Days{every: 3},
+    };
+    let set_req = test::TestRequest::with_header("content-type", "text/plain")
+        .uri("/task")
+        .method(Method::POST)
+        .cookie(session_cookie.clone())
+        .set_json(&task)
+        .to_request();
+    let set_resp = test::call_service(&mut app, set_req).await;
+    println!("{:#?}", set_resp);
+    // First ensure that the call returned OK
+    assert!(set_resp.status().is_success());
+    let saved_task: Task = test::read_body_json(set_resp).await;
+    // The task should be marked as false for now
+    assert!(!saved_task.is_done);
+    // Now make a call to mark the task complete
+    let completed_req = test::TestRequest::with_header("content-type", "text/plain")
+        .uri(format!("/task/{}/completed", saved_task.id).as_str())
+        .method(Method::POST)
+        .cookie(session_cookie.clone())
+        .to_request();
+    let completed_resp = test::call_service(&mut app, completed_req).await;
+    println!("{:#?}", completed_resp);
+    // Ensure that the complete call returned OK
+    assert!(completed_resp.status().is_success());
+    println!("Get the task and ensure it's now marked completed");
+    let get_req = test::TestRequest::with_header("content-type", "text/plain")
+        .uri(format!("/task/{}", saved_task.id).as_str())
+        .method(Method::GET)
+        .cookie(session_cookie.clone())
+        .to_request();
+    let get_resp = test::call_service(&mut app, get_req).await;
+    println!("{:#?}", get_resp);
+    assert!(get_resp.status().is_success());
+    let task: Task = test::read_body_json(get_resp).await;
+    assert!(task.is_done);
+    println!("Get the user and ensure they got their bs points");
+    let get_user_req = test::TestRequest::with_header("content-type", "text/plain")
+        .uri("/user")
+        .method(Method::GET)
+        .cookie(session_cookie)
+        .to_request();
+    let get_user_resp = test::call_service(&mut app, get_user_req).await;
+    println!("{:#?}", get_user_resp);
+    assert!(get_user_resp.status().is_success());
+    let user: User = test::read_body_json(get_user_resp).await;
+    assert_eq!(user.bspts, task_points);
+}

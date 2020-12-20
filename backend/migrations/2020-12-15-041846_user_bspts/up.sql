@@ -1,0 +1,4 @@
+-- Your SQL goes here
+
+ALTER TABLE users
+ADD COLUMN bspts INT NOT NULL DEFAULT 0;

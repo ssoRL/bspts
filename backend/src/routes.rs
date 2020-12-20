@@ -48,7 +48,14 @@ async fn sign_in_route(payload: Json<NewUser>, database: Data<PgPool>, ses: Sess
     let user = login_user(new_user, &conn)?;
     let new_session = start_session(&user, &conn);
     ses.set(SESSION_ID_KEY, new_session.id)?;
-    Ok(Json(User {uname: user.uname}))
+    Ok(Json(User {uname: user.uname, bspts: user.bspts}))
+}
+
+#[get("/user")]
+async fn get_user_route(data: Data<PgPool>, ses: Session) -> Rsp<User> {
+    with_auth(ses, data, |user, _| {
+        Ok(Json(User {uname: user.uname, bspts: user.bspts}))
+    })
 }
 
 #[post("/user")]
@@ -59,7 +66,7 @@ async fn sign_up_route(payload: Json<NewUser>, database: Data<PgPool>, ses: Sess
     let user = save_new_user(&new_user, &conn)?;
     let new_session = start_session(&user, &conn);
     ses.set(SESSION_ID_KEY, new_session.id)?;
-    Ok(Json(User {uname: user.uname}))
+    Ok(Json(User {uname: user.uname, bspts: user.bspts}))
 }
 
 #[get("/task")]
@@ -67,6 +74,14 @@ async fn task_route(data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
     with_auth(ses, data, |user, conn| {
         let tasks = get_tasks(user, &conn);
         Ok(Json(tasks))
+    })
+}
+
+#[get("/task/{id}")]
+async fn get_task_route(web::Path(id): web::Path<i32>, data: Data<PgPool>, ses: Session) -> Rsp<Task> {
+    with_auth(ses, data, |_, conn| {
+        let task = get_task(id, &conn)?;
+        Ok(Json(task))
     })
 }
 
@@ -90,6 +105,18 @@ async fn update_task_route(
         let Json(task_updates) = payload;
         let updated_task = update_task(id, task_updates, &conn)?;
         Ok(Json(updated_task))
+    })
+}
+
+#[post("/task/{id}/completed")]
+async fn complete_task_route(
+    web::Path(id): web::Path<i32>,
+    data: Data<PgPool>,
+    ses: Session
+) -> Rsp<i32> {
+    with_auth(ses, data, |_, conn| {
+        let updated_pts = complete_task(id, &conn)?;
+        Ok(Json(updated_pts))
     })
 }
 
