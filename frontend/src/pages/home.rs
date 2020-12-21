@@ -10,6 +10,9 @@ use http::status::StatusCode;
 #[derive(Properties, Clone)]
 
 struct State {
+    /// The tasks that are shown by this component.
+    /// None if no tasks have returned from fetch yet.
+    /// Empty list if this user has no tasks.
     tasks_option: Option<Vec<Task>>,
     edit_popup: bool,
     error_message: Option<String>,
@@ -23,12 +26,19 @@ pub struct Home {
 
 pub enum Msg {
     FetchTasks,
-    ReceiveTasks(Vec<Task>),
+    ReceiveTasks{tasks: Vec<Task>, are_done: bool},
     OpenTaskCreationComponent,
     NewTaskCommitted(Task),
     CancelCreateTask,
     MarkTaskCompleted(i32),
     HandleError{msg: String, code: Option<StatusCode>},
+    HandleMsgFromTask(MsgFromTask),
+}
+
+/// Messages that come to this component from the tasks it holds
+pub enum MsgFromTask {
+    /// The task was deleted and should be removed from the flow
+    Deleted(i32),
 }
 
 impl Component for Home {
@@ -59,7 +69,7 @@ impl Component for Home {
                 let callback = self.link.callback(|response: FetchResponse<Vec<Task>>| {
                     match response.into_parts() {
                         (_, Json(Ok(tasks))) => {
-                            Msg::ReceiveTasks(tasks)
+                            Msg::ReceiveTasks{tasks, are_done: false}
                         }
                         (parts, _) => {
                             Msg::HandleError{
@@ -74,7 +84,7 @@ impl Component for Home {
                 false
             }
             // The message to handle the fetch of tasks coming back
-            Msg::ReceiveTasks(tasks) => {
+            Msg::ReceiveTasks{tasks, are_done} => {
                 self.state.tasks_option= Some(tasks);
                 true
             }
@@ -109,6 +119,20 @@ impl Component for Home {
                 }
                 true
             }
+            Msg::HandleMsgFromTask(msg) => {
+                match msg {
+                    MsgFromTask::Deleted(task_id) => {
+                        if let Some(tasks) = &mut self.state.tasks_option {
+                            if let Some(task_index) = tasks.iter().position(|t| t.id == task_id) {
+                                tasks.remove(task_index);
+                            } else {
+                                ConsoleService::error(format!("No task {} to remove", task_id).as_str());
+                            }
+                        }
+                    }
+                }
+                true
+            }
         }
     }
 
@@ -136,7 +160,10 @@ impl Component for Home {
                     .map(|task| {
                         let task_id = task.id;
                         html!{
-                            <TaskItem task={task} on_tick={self.link.callback(move |_| Msg::MarkTaskCompleted(task_id))} />
+                            <TaskItem
+                                task={task}
+                                msg_up={self.link.callback(|msg| Msg::HandleMsgFromTask(msg))}
+                            />
                         }
                     })
                     .collect()

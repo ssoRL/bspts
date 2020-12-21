@@ -1,5 +1,6 @@
 use data::task::Task;
 use yew::prelude::*;
+use crate::pages::MsgFromTask;
 use crate::components::{Popup, TaskEditor, EditResult};
 
 pub struct TaskItem {
@@ -11,14 +12,13 @@ pub struct TaskItem {
 #[derive(Properties, Clone)]
 pub struct Props {
     pub task: Task,
-    pub on_tick: Callback<()>,
+    /// Send a message to the parent component
+    pub msg_up: Callback<MsgFromTask>,
 }
 
 pub struct State {
     /// Show the pop up used to edit this task
     edit_popup: bool,
-    /// Don't show this task
-    is_removed: bool,
 }
 
 pub enum Msg {
@@ -35,7 +35,6 @@ impl Component for TaskItem {
     fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
         let state = State {
             edit_popup: false,
-            is_removed: false,
         };
         Self { state, props, link }
     }
@@ -56,7 +55,7 @@ impl Component for TaskItem {
                 true
             }
             Msg::DestroySelf => {
-                self.state.is_removed = true;
+                self.props.msg_up.emit(MsgFromTask::Deleted(self.props.task.id));
                 true
             }
         }
@@ -67,12 +66,6 @@ impl Component for TaskItem {
     }
 
     fn view(&self) -> Html {
-        if self.state.is_removed {
-            // If this task is removed from the flow, don't render it
-            return html!{ <></> }
-        }
-
-        let on_tick = self.props.on_tick.reform(|_| ());
         let task = &self.props.task;
 
         let is_done_class = if task.is_done {
@@ -104,7 +97,8 @@ impl Component for TaskItem {
         html! {
             <div
                 class={format!("badge task-item {}", is_done_class)}
-                onclick={on_tick}
+                // TODO: allow the user to complete tasks
+                //onclick={on_tick}
                 title={&task.description}
             >
                 <div class="task-name">{&task.name}</div>

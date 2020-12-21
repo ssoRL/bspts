@@ -40,7 +40,7 @@ impl Component for App {
                 html! {<Home />}
             } else {
                 match route {
-                    // If not authed, can only visit the login or sign up page
+                    // If not authenticated, can only visit the login or sign up page
                     Route::SignInPage => html! {<SignIn/>},
                     Route::SignUpPage => html! {<SignUp/>},
                     // Otherwise directed to auth
