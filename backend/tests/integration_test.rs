@@ -86,9 +86,9 @@ async fn get_tasks() {
     let user = make_user("get_tasks");
     let pool = get_connection_pool();
     let session_cookie = login(&user, &pool).await.expect("Failed to login");
-    let mut app = make_service(|c| {c.service(routes::task_route);}, &pool).await;
+    let mut app = make_service(|c| {c.service(routes::get_todo_tasks_route);}, &pool).await;
     let req = test::TestRequest::with_header("content-type", "text/plain")
-        .uri("/task")
+        .uri("/task/todo")
         .method(Method::GET)
         .cookie(session_cookie)
         .to_request();
@@ -182,7 +182,7 @@ async fn delete_task() {
     let session_cookie = login(&user, &pool).await.expect("Failed to login");
     let mut app = make_service(
         |c| {
-            c.service(routes::task_route);
+            c.service(routes::get_todo_tasks_route);
             c.service(routes::commit_new_task_route);
             c.service(routes::delete_task_route);
         },
@@ -218,7 +218,7 @@ async fn delete_task() {
     // Finally get the whole list of tasks and make sure the
     // deleted one is not included
     let get_req = test::TestRequest::with_header("content-type", "text/plain")
-        .uri("/task")
+        .uri("/task/todo")
         .method(Method::GET)
         .cookie(session_cookie)
         .to_request();
@@ -244,6 +244,7 @@ async fn complete_task() {
     let mut app = make_service(
         |c| {
             c.service(routes::get_user_route);
+            c.service(routes::get_done_tasks_route);
             c.service(routes::get_task_route);
             c.service(routes::commit_new_task_route);
             c.service(routes::complete_task_route);
@@ -295,11 +296,30 @@ async fn complete_task() {
     let get_user_req = test::TestRequest::with_header("content-type", "text/plain")
         .uri("/user")
         .method(Method::GET)
-        .cookie(session_cookie)
+        .cookie(session_cookie.clone())
         .to_request();
     let get_user_resp = test::call_service(&mut app, get_user_req).await;
     println!("{:#?}", get_user_resp);
     assert!(get_user_resp.status().is_success());
     let user: User = test::read_body_json(get_user_resp).await;
     assert_eq!(user.bspts, task_points);
+    println!("Get the list of completed tasks and ensure this task is on there");
+    let get_done_tasks_req = test::TestRequest::with_header("content-type", "text/plain")
+        .uri("/task/done")
+        .method(Method::GET)
+        .cookie(session_cookie.clone())
+        .to_request();
+    let get_tasks_done_resp = test::call_service(&mut app, get_done_tasks_req).await;
+    println!("{:#?}", get_tasks_done_resp);
+    assert!(get_tasks_done_resp.status().is_success());
+    let tasks: Vec<Task> = test::read_body_json(get_tasks_done_resp).await;
+    let mut in_list: bool = false;
+    for task in tasks {
+        if task.id == saved_task.id {
+            in_list = true;
+        }
+    }
+    if !in_list {
+        panic!(format!("Can't find task with id: {}", saved_task.id))
+    }
 }

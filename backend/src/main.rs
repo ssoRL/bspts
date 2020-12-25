@@ -25,7 +25,8 @@ async fn main() -> std::io::Result<()> {
                 CookieSession::signed(&cookie_key.as_bytes()) // <- create cookie based session middleware
                       .secure(false)
             )
-            .service(task_route)
+            .service(get_todo_tasks_route)
+            .service(get_done_tasks_route)
             .service(get_task_route)
             .service(commit_new_task_route)
             .service(update_task_route)

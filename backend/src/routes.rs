@@ -69,10 +69,19 @@ async fn sign_up_route(payload: Json<NewUser>, database: Data<PgPool>, ses: Sess
     Ok(Json(User {uname: user.uname, bspts: user.bspts}))
 }
 
-#[get("/task")]
-async fn task_route(data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
+#[get("/task/todo")]
+async fn get_todo_tasks_route(data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
     with_auth(ses, data, |user, conn| {
-        let tasks = get_tasks(user, &conn);
+        let tasks = get_tasks(user, false, &conn);
+        Ok(Json(tasks))
+    })
+}
+
+#[get("/task/done")]
+async fn get_done_tasks_route(data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
+    println!("In task done route");
+    with_auth(ses, data, |user, conn| {
+        let tasks = get_tasks(user, true, &conn);
         Ok(Json(tasks))
     })
 }

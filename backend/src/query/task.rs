@@ -83,8 +83,14 @@ fn query_task_to_task(qt: &QTask) -> Task {
 }
 
 /// Get all of the tasks for the user
-pub fn get_tasks(user: QUser, conn: &PgPooledConnection) -> Vec<Task> {
+/// * user: The user to get the tasks for
+/// * done_tasks: true to get tasks that are already done, false to get tasks that are
+/// not yet completed
+pub fn get_tasks(user: QUser, done_tasks: bool, conn: &PgPooledConnection) -> Vec<Task> {
+    use crate::schema::tasks::dsl::*;
+
     let q_tasks = QTask::belonging_to(&user)
+        .filter(is_done.eq(done_tasks))
         .load::<QTask>(conn)
         .expect("Error loading tasks");
     q_tasks.iter().map(query_task_to_task).collect()
