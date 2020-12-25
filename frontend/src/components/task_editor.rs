@@ -19,7 +19,7 @@ pub struct TaskEditor {
 /// The result of this edit
 pub enum EditResult {
     /// Edit/create succeeded. Return new task
-    Return(Task),
+    Return(Box<Task>),
     /// The creation was canceled with no effect
     Cancel,
     /// The task was destroyed
@@ -29,7 +29,7 @@ pub enum EditResult {
 #[derive(Properties, Clone)]
 pub struct Props {
     /// A task to edit, or none to create a new task
-    pub task_to_edit: Option<Task>,
+    pub task_to_edit: Option<Box<Task>>,
     pub on_done: Callback<EditResult>,
 }
 
@@ -196,7 +196,7 @@ impl Component for TaskEditor {
                 true
             }
             Msg::ReturnTask(task) => {
-                self.props.on_done.emit(EditResult::Return(task));
+                self.props.on_done.emit(EditResult::Return(Box::new(task)));
                 true
             }
             Msg::DeleteTask => {
@@ -225,6 +225,7 @@ impl Component for TaskEditor {
             }
             Msg::TaskDeleted => {
                 self.props.on_done.emit(EditResult::Destroy);
+                self.fetch_action = None;
                 true
             }
             Msg::CancelEdit => {

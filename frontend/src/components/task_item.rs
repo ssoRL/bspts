@@ -1,17 +1,22 @@
 use data::task::Task;
 use yew::prelude::*;
+use yew::format::{Json};
 use crate::pages::MsgFromTask;
 use crate::components::{Popup, TaskEditor, EditResult};
+use crate::apis::{complete_task, FetchResponse};
+use yew::services::fetch::{FetchTask};
+use yew::services::ConsoleService;
 
 pub struct TaskItem {
     state: State,
     props: Props,
-    link: ComponentLink<Self>
+    link: ComponentLink<Self>,
+    fetch_action: Option<FetchTask>,
 }
 
 #[derive(Properties, Clone)]
 pub struct Props {
-    pub task: Task,
+    pub task: Box<Task>,
     /// Send a message to the parent component
     pub msg_up: Callback<MsgFromTask>,
 }
@@ -23,7 +28,9 @@ pub struct State {
 
 pub enum Msg {
     EditTask,
-    Update(Task),
+    CompleteTask,
+    TaskIsCompleted(i32),
+    Update(Box<Task>),
     CancelEdit,
     DestroySelf,
 }
@@ -36,13 +43,36 @@ impl Component for TaskItem {
         let state = State {
             edit_popup: false,
         };
-        Self { state, props, link }
+        Self { state, props, link, fetch_action: None }
     }
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
             Msg::EditTask => {
                 self.state.edit_popup = true;
+                true
+            }
+            Msg::CompleteTask => {
+                let callback = self.link.callback(|response: FetchResponse<i32>| {
+                    match response.into_parts() {
+                        (_, Json(Ok(pts))) => {
+                            Msg::TaskIsCompleted(pts)
+                        }
+                        (_, _) => {
+                            // TODO: Real error handling
+                            ConsoleService::error("Could not mark task complete");
+                            Msg::CancelEdit
+                        }
+                    }
+                });
+                let fetch = complete_task(self.props.task.id, callback);
+                self.fetch_action = Some(fetch);
+                true
+            }
+            Msg::TaskIsCompleted(total_points) => {
+                ConsoleService::log(&format!("pts so far: {}", total_points));
+                self.fetch_action = None;
+                self.props.msg_up.emit(MsgFromTask::Completed(self.props.task.id));
                 true
             }
             Msg::Update(task) => {
@@ -55,22 +85,33 @@ impl Component for TaskItem {
                 true
             }
             Msg::DestroySelf => {
+                self.state.edit_popup = false;
                 self.props.msg_up.emit(MsgFromTask::Deleted(self.props.task.id));
                 true
             }
         }
     }
 
-    fn change(&mut self, _props: Self::Properties) -> ShouldRender {
+    fn change(&mut self, props: Self::Properties) -> ShouldRender {
+        self.props = props;
         true
     }
 
     fn view(&self) -> Html {
+        if let Some(_) = self.fetch_action {
+            // Return loading indicator
+            return html!{
+                <div
+                    class={"badge task-item loading"}
+                />
+            }
+        }
+
         let task = &self.props.task;
 
         let is_done_class = if task.is_done {
            "completed"
-        }else {
+        } else {
            "uncompleted"
         };
 
@@ -93,6 +134,7 @@ impl Component for TaskItem {
         let do_by = format!("Do by {}", do_by_description);
 
         let click_edit = self.link.callback(|_| {Msg::EditTask});
+        let click_done = self.link.callback(|_| {Msg::CompleteTask});
 
         html! {
             <div
@@ -108,7 +150,7 @@ impl Component for TaskItem {
                 <div class="badge-line">
                     <span class="edit button" onclick={click_edit}>{"Edit"}</span>
                     <span class="flex-buffer"></span>
-                    <span class="done button">{"Done"}</span>
+                    <span class="done button" onclick={click_done}>{"Done"}</span>
                 </div>
                 {
                     if self.state.edit_popup {

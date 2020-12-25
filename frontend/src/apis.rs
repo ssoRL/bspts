@@ -66,9 +66,17 @@ pub fn sign_up(new_user: NewUser, callback: FetchCallback<User>) -> FetchTask  {
     FetchService::fetch(post, callback).unwrap()
 }
 
-/// Get a list of all of the tasks
-pub fn get_tasks(callback: FetchCallback<Vec<Task>>) -> FetchTask {
-    let get = Request::get("/task")
+/// Get a list of all of the tasks not yet completed
+pub fn get_todo_tasks(callback: FetchCallback<Vec<Task>>) -> FetchTask {
+    let get = Request::get("/task/todo")
+        .body(Nothing)
+        .unwrap();
+    FetchService::fetch(get, callback).unwrap()
+}
+
+/// Get a list of all of the completed tasks
+pub fn get_done_tasks(callback: FetchCallback<Vec<Task>>) -> FetchTask {
+    let get = Request::get("/task/done")
         .body(Nothing)
         .unwrap();
     FetchService::fetch(get, callback).unwrap()
@@ -88,6 +96,15 @@ pub fn update_task(task_id: i32, task_edits: NewTask, callback: FetchCallback<Ta
         let post = Request::put(format!("/task/{}", task_id))
             .header("Content-Type", "application/json")
             .body(Json(&task_edits))
+            .unwrap();
+        FetchService::fetch(post, callback).unwrap()
+}
+
+/// Mark a task as completed
+pub fn complete_task(task_id: i32, callback: FetchCallback<i32>) -> FetchTask {
+        let post = Request::post(format!("/task/complete/{}", task_id))
+            .header("Content-Type", "application/json")
+            .body(Nothing)
             .unwrap();
         FetchService::fetch(post, callback).unwrap()
 }

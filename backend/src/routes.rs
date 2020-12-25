@@ -79,7 +79,6 @@ async fn get_todo_tasks_route(data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>
 
 #[get("/task/done")]
 async fn get_done_tasks_route(data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
-    println!("In task done route");
     with_auth(ses, data, |user, conn| {
         let tasks = get_tasks(user, true, &conn);
         Ok(Json(tasks))
@@ -117,12 +116,13 @@ async fn update_task_route(
     })
 }
 
-#[post("/task/{id}/completed")]
+#[post("/task/complete/{id}")]
 async fn complete_task_route(
     web::Path(id): web::Path<i32>,
     data: Data<PgPool>,
     ses: Session
 ) -> Rsp<i32> {
+    println!("In complete task route");
     with_auth(ses, data, |_, conn| {
         let updated_pts = complete_task(id, &conn)?;
         Ok(Json(updated_pts))
