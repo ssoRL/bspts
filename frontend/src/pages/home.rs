@@ -6,6 +6,11 @@ use yew::format::{Json};
 use yew::services::fetch::{FetchTask};
 use yew::services::console::{ConsoleService};
 use http::status::StatusCode;
+use crate::store::Store;
+use crate::data_store::StoreID;
+use std::rc::Rc;
+use std::sync::Mutex;
+use data::user::User;
 
 #[derive(Properties, Clone)]
 struct State {
@@ -15,17 +20,26 @@ struct State {
     done_tasks: TaskList,
     edit_popup: bool,
     error_message: Option<String>,
+    bspts: i32,
+}
+
+#[derive(Properties, Clone)]
+pub struct Props {
+    pub store: Rc<Mutex<Store>>,
 }
 
 pub struct Home {
     state: State,
+    props: Props,
     link: ComponentLink<Self>,
     fetch_tasks: Option<FetchTask>,
+    store_id: Option<StoreID>,
 }
 
 pub enum Msg {
     FetchTasks(bool),
     ReceiveTasks{tasks: Vec<Task>, are_done: bool},
+    SetPoints(i32),
     OpenTaskCreationComponent,
     NewTaskCommitted(Box<Task>),
     CancelCreateTask,
@@ -43,9 +57,9 @@ pub enum MsgFromTask {
 
 impl Component for Home {
     type Message = Msg;
-    type Properties = ();
+    type Properties = Props;
 
-    fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
+    fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
         ConsoleService::info("Getting tasks");
 
         // Get the ball rolling on getting the tasks
@@ -57,9 +71,12 @@ impl Component for Home {
                 done_tasks: TaskList::new(),
                 edit_popup: false,
                 error_message: None,
+                bspts: 0,
             },
+            props,
             link,
             fetch_tasks: None,
+            store_id: None,
         }
     }
 
@@ -98,6 +115,14 @@ impl Component for Home {
                     self.link.send_message(Msg::FetchTasks(true));
                 }
                 true
+            }
+            Msg::SetPoints(bspts) => {
+                if self.state.bspts == bspts {
+                    false
+                } else {
+                    self.state.bspts = bspts;
+                    true
+                }
             }
             Msg::OpenTaskCreationComponent => {
                 self.state.edit_popup = true;
@@ -159,6 +184,23 @@ impl Component for Home {
         true
     }
 
+    fn rendered(self: &mut Self, _: bool) {
+        let pts_callback = self.link.callback(|user: Rc<User>| {
+            Msg::SetPoints(user.bspts)
+        });
+        let mut store_mut = self.props.store.lock().unwrap();
+        let pts_handle = store_mut.user.subscribe(pts_callback, true);
+        self.store_id = Some(pts_handle);
+    }
+
+    fn destroy(self: &mut Self) {
+        if let Some(id) = self.store_id {
+            let mut store_mut = self.props.store.lock().unwrap();
+            store_mut.user.unsubscribe(id);
+            self.store_id = None;
+        }
+    }
+
     fn view(&self) -> Html {
         if let Some(msg) = &self.state.error_message {
             return html! {
@@ -170,11 +212,11 @@ impl Component for Home {
         let todo_tasks_html = if self.state.todo_tasks.is_unset() {
             html! {<span>{"Waiting for tasks to be fetched"}</span>}
         } else {
-            self.state.todo_tasks.to_html(&msg_handler)
+            self.state.todo_tasks.to_html(&msg_handler, Rc::clone(&self.props.store))
         };
 
         
-        let done_tasks_html = self.state.done_tasks.to_html(&msg_handler);
+        let done_tasks_html = self.state.done_tasks.to_html(&msg_handler, Rc::clone(&self.props.store));
 
         let new_task_html = if self.state.edit_popup {
             let on_done = self.link.callback(|result: EditResult| {
@@ -203,6 +245,7 @@ impl Component for Home {
 
         html! {
             <>
+                <div>{format!("pts: {}", self.state.bspts)}</div>
                 <div>{new_task_html}</div>
                 <div class="task-list-header">{"Things yet to do"}</div>
                 <div class="badge-field">{todo_tasks_html}</div>

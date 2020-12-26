@@ -2,7 +2,7 @@ use yew::prelude::*;
 use yew::services::fetch::{FetchTask};
 use data::user::*;
 use yew::format::{Json};
-use crate::apis::{sign_in_frontend, sign_up, FetchResponse};
+use crate::apis::{store_user, sign_up, FetchResponse};
 
 struct State {
     new_user: NewUser,
@@ -18,7 +18,7 @@ pub struct SignUp {
 
 pub enum Msg {
     CreateNewUser,
-    SaveUserName(String),
+    SaveUser(User),
     TryAgain(String),
     UpdateUname(String),
     UpdatePassword(String),
@@ -48,7 +48,7 @@ impl Component for SignUp {
             Msg::CreateNewUser => {
                 let callback = self.link.callback(|jwt_response: FetchResponse<User>| {
                     if let (_, Json(Ok(user))) = jwt_response.into_parts() {
-                        Msg::SaveUserName(user.uname)
+                        Msg::SaveUser(user)
                     } else {
                         Msg::TryAgain("There was an issue creating that user".to_string())
                     }
@@ -58,8 +58,8 @@ impl Component for SignUp {
                 self.state.saving = true;
                 true
             },
-            Msg::SaveUserName(jwt) => {
-                sign_in_frontend(jwt);
+            Msg::SaveUser(user) => {
+                store_user(user);
                 true
             },
             Msg::TryAgain(error) => {

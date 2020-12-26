@@ -2,7 +2,7 @@ use yew::prelude::*;
 use yew::services::fetch::{FetchTask};
 use data::user::*;
 use yew::format::{Json};
-use crate::apis::{sign_in_frontend, sign_in, FetchResponse};
+use crate::apis::{store_user, sign_in, FetchResponse};
 use yew::services::ConsoleService;
 use http::status::StatusCode;
 
@@ -20,7 +20,7 @@ pub struct SignIn {
 
 pub enum Msg {
     LoginUser,
-    SaveUserName(String),
+    SaveUser(User),
     TryAgain(String),
     UpdateUname(String),
     UpdatePassword(String),
@@ -57,7 +57,7 @@ impl Component for SignIn {
                             Msg::TryAgain("Incorrect Password".to_string())
                         }
                         (_, Json(Ok(user))) => {
-                            Msg::SaveUserName(user.uname)
+                            Msg::SaveUser(user)
                         }
                         _ => {
                             Msg::TryAgain("There was some problem, please try again".to_string())
@@ -69,8 +69,8 @@ impl Component for SignIn {
                 self.state.saving = true;
                 true
             },
-            Msg::SaveUserName(jwt) => {
-                sign_in_frontend(jwt);
+            Msg::SaveUser(user) => {
+                store_user(user);
                 true
             },
             Msg::TryAgain(error) => {

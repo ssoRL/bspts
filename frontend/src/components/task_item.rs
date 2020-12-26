@@ -6,6 +6,9 @@ use crate::components::{Popup, TaskEditor, EditResult};
 use crate::apis::{complete_task, FetchResponse};
 use yew::services::fetch::{FetchTask};
 use yew::services::ConsoleService;
+use crate::store::Store;
+use std::rc::Rc;
+use std::sync::Mutex;
 
 pub struct TaskItem {
     state: State,
@@ -19,6 +22,7 @@ pub struct Props {
     pub task: Box<Task>,
     /// Send a message to the parent component
     pub msg_up: Callback<MsgFromTask>,
+    pub store: Rc<Mutex<Store>>,
 }
 
 pub struct State {
@@ -71,6 +75,11 @@ impl Component for TaskItem {
             }
             Msg::TaskIsCompleted(total_points) => {
                 ConsoleService::log(&format!("pts so far: {}", total_points));
+                let mut store_mut = self.props.store.lock().unwrap();
+                store_mut.user.update(|user| {
+                    user.bspts = total_points;
+                    true
+                });
                 self.fetch_action = None;
                 self.props.msg_up.emit(MsgFromTask::Completed(self.props.task.id));
                 true

@@ -18,12 +18,14 @@ type FetchCallback<T> = Callback<FetchResponse<T>>;
 const UNAME_KEY: &str = "user-name";
 
 /// Check if the user has signed in
-pub fn is_signed_in() -> bool {
+pub fn get_stored_user() -> Option<User> {
     // There will be a user-name value in local storage if the user has signed in
     // and gotten back a session cookie
     let stor = StorageService::new(Area::Local).expect("Could not connect to the local storage");
-    let auth_from_storage: Result<String, _> = stor.restore(UNAME_KEY);
-    auth_from_storage.is_ok()
+    let stored_string: Result<String, anyhow::Error> = stor.restore::<>(UNAME_KEY);
+    let serial = stored_string.ok()?;
+    let user: User = serde_json::from_str(&serial).ok()?;
+    Some(user)
 }
 
 /// Remove the user's id from local storage to
@@ -41,9 +43,11 @@ pub fn sign_out_frontend() {
 /// signed in. Do this instead of checking the session
 /// cookie since yew doesn't have a cookie service.
 /// Then route the use to the home route
-pub fn sign_in_frontend(user_name: String) {
+pub fn store_user(user: User) {
     let mut stor = StorageService::new(Area::Local).expect("Could not connect to the local storage");
-    stor.store(UNAME_KEY, Ok(user_name));
+    // let serial = serde_json::to_string(&user).map_err(|e| anyhow::Error::new(e));
+    // let dump = Json(&user);
+    stor.store(UNAME_KEY, Json(&user));
     let mut agent_dispatch: RouteAgentDispatcher<()> = RouteAgentDispatcher::default();
     agent_dispatch.send(ChangeRoute(app::Route::HomePage.into()));
 }

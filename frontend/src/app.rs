@@ -3,6 +3,11 @@ use yew_router::prelude::*;
 
 use crate::pages::*;
 use crate::apis;
+use crate::store::Store;
+use crate::data_store::store_item::StoreItem;
+use std::rc::Rc;
+use std::sync::Mutex;
+use data::user::User;
 
 /// Definition of the routes for this app
 #[derive(Switch, Debug, Clone)]
@@ -34,10 +39,13 @@ impl Component for App {
     }
 
     fn view(&self) -> Html {
-        let render = Router::render(|route: Route|
-            if apis::is_signed_in() {
+        let render = Router::render(move |route: Route| {
+            if let Some(user) = apis::get_stored_user() {
+                let store = Store {
+                    user: StoreItem::new(user),
+                };
                 // If authorized, always go home for now
-                html! {<Home />}
+                html! {<Home store={Rc::new(Mutex::new(store))} />}
             } else {
                 match route {
                     // If not authenticated, can only visit the login or sign up page
@@ -47,7 +55,7 @@ impl Component for App {
                     _ => html! {<AuthOptions/>},
                 }
             }
-        );
+        });
 
         html! {
             <Router<Route, ()> render=render/>
