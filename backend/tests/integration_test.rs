@@ -16,7 +16,7 @@ fn make_user(user_name_prefix: &str) -> NewUser {
     }
 }
 
-/// Makes a new app service with the specified route
+/// Makes a new app service with the specified routes
 async fn make_service<F>(
     config: F,
     pool: &PgPool
@@ -44,7 +44,7 @@ async fn login(user: &NewUser, pool: &PgPool) -> Option<http::Cookie<'static>> {
     let conn = pool.get().expect("Could not get connection from pool");
     let _ = query::user::save_new_user(&user, &conn);
     // Then sign in by calling the sign in route
-    let mut app = make_service(|c| {c.service(routes::sign_in_route);}, &pool).await;
+    let mut app = make_service(|c| {c.service(route::user::sign_in);}, &pool).await;
     let req = test::TestRequest::with_header("content-type", "text/plain")
         .uri("/login")
         .method(Method::POST)
@@ -66,8 +66,7 @@ async fn sign_up_user() {
     let pool = get_connection_pool();
     let user = make_user("sign_up_user");
     println!("u: {:#?}", user);
-    let mut app = make_service(|c| {c.service(routes::sign_up_route
-    );}, &pool).await;
+    let mut app = make_service(|c| {c.service(route::user::sign_up);}, &pool).await;
     let req = test::TestRequest::with_header("content-type", "text/plain")
         .uri("/user")
         .method(Method::POST)
@@ -86,7 +85,7 @@ async fn get_tasks() {
     let user = make_user("get_tasks");
     let pool = get_connection_pool();
     let session_cookie = login(&user, &pool).await.expect("Failed to login");
-    let mut app = make_service(|c| {c.service(routes::get_todo_tasks_route);}, &pool).await;
+    let mut app = make_service(|c| {c.service(route::task::get_todo);}, &pool).await;
     let req = test::TestRequest::with_header("content-type", "text/plain")
         .uri("/task/todo")
         .method(Method::GET)
@@ -102,7 +101,7 @@ async fn add_task() {
     let user = make_user("add_task");
     let pool = get_connection_pool();
     let session_cookie = login(&user, &pool).await.expect("Failed to login");
-    let mut app = make_service(|c| {c.service(routes::commit_new_task_route);}, &pool).await;
+    let mut app = make_service(|c| {c.service(route::task::commit_new);}, &pool).await;
     let task_name = "TaskName".to_string();
     let new_task = NewTask {
         name: task_name.clone(),
@@ -132,8 +131,8 @@ async fn update_task() {
     let session_cookie = login(&user, &pool).await.expect("Failed to login");
     let mut app = make_service(
         |c| {
-            c.service(routes::commit_new_task_route);
-            c.service(routes::update_task_route);
+            c.service(route::task::commit_new);
+            c.service(route::task::update);
         },
         &pool
     ).await;
@@ -182,9 +181,9 @@ async fn delete_task() {
     let session_cookie = login(&user, &pool).await.expect("Failed to login");
     let mut app = make_service(
         |c| {
-            c.service(routes::get_todo_tasks_route);
-            c.service(routes::commit_new_task_route);
-            c.service(routes::delete_task_route);
+            c.service(route::task::get_todo);
+            c.service(route::task::commit_new);
+            c.service(route::task::delete);
         },
         &pool
     ).await;
@@ -238,20 +237,23 @@ async fn delete_task() {
 
 #[actix_rt::test]
 async fn complete_task() {
+    println!("Setup complete test");
     let user = make_user("complete_task");
     let pool = get_connection_pool();
     let session_cookie = login(&user, &pool).await.expect("Failed to login");
     let mut app = make_service(
         |c| {
-            c.service(routes::get_user_route);
-            c.service(routes::get_done_tasks_route);
-            c.service(routes::get_task_route);
-            c.service(routes::commit_new_task_route);
-            c.service(routes::complete_task_route);
+            c.service(route::user::get_user);
+            c.service(route::task::get_done);
+            c.service(route::task::get_by_id);
+            c.service(route::task::commit_new);
+            c.service(route::task::complete);
         },
         &pool
     ).await;
     let task_points = 1;
+
+    println!("Create the task");
     let task = NewTask {
         name: "TaskName".to_string(),
         description: "".to_string(),
@@ -266,21 +268,19 @@ async fn complete_task() {
         .to_request();
     let set_resp = test::call_service(&mut app, set_req).await;
     println!("{:#?}", set_resp);
-    // First ensure that the call returned OK
     assert!(set_resp.status().is_success());
     let saved_task: Task = test::read_body_json(set_resp).await;
-    // The task should be marked as false for now
-    assert!(!saved_task.is_done);
-    // Now make a call to mark the task complete
-    let completed_req = test::TestRequest::with_header("content-type", "text/plain")
-        .uri(format!("/task/{}/completed", saved_task.id).as_str())
+    assert!(!saved_task.is_done, "The task should be marked as not-done for now");
+
+    println!("Now make a call to mark the task complete");
+    let complete_req = test::TestRequest::with_header("content-type", "text/plain")
+        .uri(format!("/task/complete/{id}", id = saved_task.id).as_str())
         .method(Method::POST)
         .cookie(session_cookie.clone())
         .to_request();
-    let completed_resp = test::call_service(&mut app, completed_req).await;
-    println!("{:#?}", completed_resp);
-    // Ensure that the complete call returned OK
-    assert!(completed_resp.status().is_success());
+    let complete_resp = test::call_service(&mut app, complete_req).await;
+    println!("{:#?}", complete_resp);
+    assert!(complete_resp.status().is_success());
     println!("Get the task and ensure it's now marked completed");
     let get_req = test::TestRequest::with_header("content-type", "text/plain")
         .uri(format!("/task/{}", saved_task.id).as_str())

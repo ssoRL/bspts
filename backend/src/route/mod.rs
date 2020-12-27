@@ -1,23 +1,18 @@
-use actix_web::{
-    get,
-    post,
-    error,
-    http::StatusCode,
-    web::{Data, Json}
-};
-use data::user::*;
-use crate::query::user::*;
-use crate::query::session::*;
-use crate::models;
-use actix_session::{Session};
-use crate::{PgPool, PgPooledConnection};
+pub mod task;
+pub mod user;
 
-type Rsp<T> = actix_web::Result<Json<T>>;
+use actix_web::{error, http::StatusCode, web::Data};
+use actix_session::{Session};
+use crate::{
+    PgPool, PgPooledConnection,
+    models,
+    query::session::get_session_user,
+    error::*,
+};
 
 const SESSION_ID_KEY: &str = "session_id";
 
-/// Runs the provided function after checking the user's session is OK
-fn with_auth<T, F>(ses: Session, data: Data<PgPool>, run: F)-> Rsp<T>
+pub fn with_auth<T, F>(ses: Session, data: Data<PgPool>, run: F)-> Rsp<T>
 where
     F: FnOnce(models::QUser, PgPooledConnection) -> Rsp<T>
 {

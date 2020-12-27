@@ -1,7 +1,7 @@
 use crate::models::*;
 use crate::PgPooledConnection;
 use diesel::prelude::*;
-use actix_web::{error, Result, http::StatusCode};
+use crate::error::*;
 
 /// Creates a new session and returns its id
 pub fn start_session(q_user: &QUser, conn: &PgPooledConnection) -> QSession {
@@ -26,21 +26,9 @@ fn get_session(session_id: i32, conn: &PgPooledConnection) -> Result<QSession> {
         .expect("Error getting users from session id");
 
     match &q_sessions[..] {
-        [] => {
-            let error = error::InternalError::new(
-                format!("There's no session with id {}", session_id),
-                StatusCode::UNAUTHORIZED
-            );
-            Err(error.into())
-        }
+        [] => Err(unauthorized(format!("There's no session with id {}", session_id))),
         [q_ses] =>  Ok(q_ses.clone()),
-        _ => {
-            let error = error::InternalError::new(
-                format!("There was an error getting session with id {}", session_id),
-                StatusCode::CONFLICT
-            );
-            Err(error.into())
-        }
+        _ => Err(conflict(format!("There was an error getting session with id {}", session_id))),
     }
 }
 
@@ -55,20 +43,8 @@ pub fn get_session_user(session_id: i32, conn: &PgPooledConnection) -> Result<QU
         .expect("Error getting users from session id");
 
     match &q_users[..] {
-        [] => {
-            let error = error::InternalError::new(
-                format!("There's no user with id {}", q_ses.user_id),
-                StatusCode::NOT_FOUND
-            );
-            Err(error.into())
-        }
+        [] => Err(not_found(format!("There's no user with id {}", q_ses.user_id))),
         [q_user] =>  Ok(q_user.clone()),
-        _ => {
-            let error = error::InternalError::new(
-                format!("There was an error getting user with id {}", q_ses.user_id),
-                StatusCode::CONFLICT
-            );
-            Err(error.into())
-        }
+        _ => Err(conflict(format!("There was an error getting user with id {}", q_ses.user_id))),
     }
 }

@@ -6,7 +6,7 @@ use crate::models;
 use crate::PgPooledConnection;
 use diesel::RunQueryDsl;
 use crate::diesel::ExpressionMethods;
-use actix_web::{error, Result, http::StatusCode};
+use crate::error::*;
 
 static PBKDF2_ALG: pbkdf2::Algorithm = pbkdf2::PBKDF2_HMAC_SHA256;
 const CREDENTIAL_LEN: usize = digest::SHA256_OUTPUT_LEN;
@@ -53,23 +53,9 @@ fn get_q_user_by_id(user_id: i32, conn: &PgPooledConnection) -> Result<models::Q
         .expect("Error getting users");
 
     match &q_users[..] {
-        [] => {
-            let error = error::InternalError::new(
-                format!("Found no user with id {}", user_id),
-                StatusCode::NOT_FOUND
-            );
-            Err(error.into())
-        }
-        [q_user] =>  {
-            Ok(q_user.clone())
-        },
-        _ => {
-            let error = error::InternalError::new(
-                "Ambiguous user id".to_string(),
-                StatusCode::CONFLICT
-            );
-            Err(error.into())
-        }
+        [] => Err(not_found(format!("Found no user with id {}", user_id))),
+        [q_user] => Ok(q_user.clone()),
+        _ => Err(conflict("Ambiguous user id".to_string())),
     }
 }
 
@@ -80,12 +66,7 @@ fn update_q_user(q_user: models::QUser, conn: &PgPooledConnection) -> Result<mod
     diesel::update(users.find(q_user.id))
         .set(&q_user)
         .get_result(conn)
-        .map_err(|_| {
-            error::InternalError::new(
-                format!("Error updating for user {}", q_user.id),
-                StatusCode::BAD_REQUEST
-            ).into()
-        })
+        .map_err(|_| bad_request(format!("Error updating for user {}", q_user.id)))
 }
 
 /// Returns the user if they are allowed to log in with that password, or an error otherwise
@@ -94,36 +75,20 @@ pub fn login_user(user: NewUser, conn: &PgPooledConnection) -> Result<models::QU
     use diesel::query_dsl::filter_dsl::FilterDsl;
 
     let q_users: Vec<models::QUser> = users
-        .filter(uname.eq(user.uname))
+        .filter(uname.eq(&user.uname))
         .load::<models::QUser>(conn)
         .expect("Error getting users");
 
     match &q_users[..] {
-        [] => {
-            let error = error::InternalError::new(
-                "There's no user with that username".to_string(),
-                StatusCode::NOT_FOUND
-            );
-            Err(error.into())
-        }
+        [] => Err(not_found(format!("There's no user with name {}", &user.uname))),
         [q_user] =>  {
             if check_password(&user.password, q_user) {
                 Ok(q_user.clone())
             } else {
-                let error = error::InternalError::new(
-                    "Incorrect password".to_string(),
-                    StatusCode::UNAUTHORIZED
-                );
-                Err(error.into())
+                Err(unauthorized("Incorrect password".to_string()))
             }
         },
-        _ => {
-            let error = error::InternalError::new(
-                "Ambiguous user name".to_string(),
-                StatusCode::CONFLICT
-            );
-            Err(error.into())
-        }
+        _ => Err(conflict("Ambiguous user name".to_string())),
     }
 }
 
@@ -142,13 +107,7 @@ pub fn save_new_user(user: &NewUser, conn: &PgPooledConnection) -> Result<models
         .values(insert)
         .get_result::<models::QUser>(conn);
 
-    save_user_result.map_err(|_| {
-        let error = error::InternalError::new(
-            "There's already a user with that username".to_string(),
-            StatusCode::CONFLICT
-        );
-        error.into()
-    })
+    save_user_result.map_err(|_| conflict("There's already a user with that username".to_string()))
 }
 
 /// Adds the provided number of points to the user's total

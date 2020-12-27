@@ -1,4 +1,4 @@
-use actix_web::{Result, error, http::StatusCode};
+use actix_web::Result;
 use diesel::connection::{TransactionManager, AnsiTransactionManager};
 use crate::PgPooledConnection;
 

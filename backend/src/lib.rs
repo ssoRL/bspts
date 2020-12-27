@@ -8,7 +8,8 @@ extern crate diesel_migrations;
 pub mod query;
 mod models;
 mod schema;
-pub mod routes;
+pub mod route;
+pub mod error;
 
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use diesel::pg::PgConnection;

@@ -3,7 +3,7 @@ use data::task::*;
 use chrono::{NaiveDate, Local, Duration, Datelike};
 use crate::PgPooledConnection;
 use crate::models::*;
-use actix_web::{Result, error, http::StatusCode};
+use crate::error::*;
 use crate::query::{atomically, user};
 
 pub const DAYS: &str = "Days";
@@ -102,21 +102,11 @@ fn get_q_task(task_id: i32, conn: &PgPooledConnection) -> Result<QTask> {
     let mut q_tasks = tasks
         .filter(id.eq(task_id))
         .load::<QTask>(conn)
-        .map_err(|_| {
-            error::InternalError::new(
-                format!("Error querying for task {}", task_id),
-                StatusCode::BAD_REQUEST
-            )
-        })?;
+        .map_err(|_| bad_request(format!("Error querying for task {}", task_id)))?;
     // Should be a vec of only one item, return that item
     match q_tasks.pop() {
         Some(q_task) => Ok(q_task),
-        None => {
-            Err(error::InternalError::new(
-                format!("No task with id {} could be found", task_id),
-                StatusCode::NOT_FOUND
-            ).into())
-        }
+        None => Err(not_found(format!("No task with id {} could be found", task_id))),
     }
 }
 
@@ -167,12 +157,7 @@ fn update_q_task(q_task: &QTask, conn: &PgPooledConnection) -> Result<QTask> {
     diesel::update(tasks.find(q_task.id))
         .set(q_task)
         .get_result(conn)
-        .map_err(|_| {
-            error::InternalError::new(
-                format!("Error updating for task {}", q_task.id),
-                StatusCode::BAD_REQUEST
-            ).into()
-        })
+        .map_err(|_| bad_request(format!("Error updating for task {}", q_task.id)))
 }
 
 /// Add a new task to the database
@@ -208,13 +193,7 @@ pub fn delete_task(task_id: i32, conn: &PgPooledConnection) -> Result<()> {
 
     match diesel::delete(tasks.find(task_id)).execute(conn) {
         Ok(_) => Ok(()),
-        Err(_) => {
-            let error = error::InternalError::new(
-                format!("Could not delete task {}", task_id),
-                StatusCode::BAD_REQUEST,
-            );
-            return Err(error.into())
-        }
+        Err(_) => Err(bad_request(format!("Could not delete task {}", task_id))),
     }
 }
 
