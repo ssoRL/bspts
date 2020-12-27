@@ -46,7 +46,7 @@ pub fn get_reward(reward_id: i32, conn: &PgPooledConnection) -> Result<Reward> {
 }
 
 /// Add a new reward to the database
-pub fn new_reward(new_reward: NewReward, user: QUser, conn: PgPooledConnection) -> Reward {
+pub fn commit_new_reward(new_reward: NewReward, user: QUser, conn: PgPooledConnection) -> Reward {
     use crate::schema::rewards;
 
     let insert_reward = InsertableReward {
