@@ -3,14 +3,14 @@ backups:
     https://docs.docker.com/storage/volumes/#backup-restore-or-migrate-data-volumes
 logging
 documentation
-fetch macro to reduce boilerplate of adding jwt
 chron jobs to mark done
 send reminder emails
 yew tests (Might have to do some original work here X_X)
 reformat use (just fmt in general??)
 
 FEATURES:
-goodies
+test for rewards
+frontend rewards
 set icons
 styling for no auth page
 make routing work on non-hashtag routes

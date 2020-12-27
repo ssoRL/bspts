@@ -1,5 +1,6 @@
 pub mod task;
 pub mod user;
+pub mod reward;
 
 use actix_web::{error, http::StatusCode, web::Data};
 use actix_session::{Session};

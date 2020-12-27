@@ -5,6 +5,7 @@ use crate::PgPooledConnection;
 pub mod task;
 pub mod user;
 pub mod session;
+pub mod reward;
 
 // Run a function inside of an sql transaction.
 // If it returns an error, rollback, otherwise commit

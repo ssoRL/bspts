@@ -1,4 +1,14 @@
 table! {
+    rewards (id) {
+        id -> Int4,
+        user_id -> Int4,
+        name -> Text,
+        description -> Text,
+        bspts -> Int4,
+    }
+}
+
+table! {
     sessions (id) {
         id -> Int4,
         user_id -> Int4,
@@ -31,6 +41,7 @@ table! {
 }
 
 allow_tables_to_appear_in_same_query!(
+    rewards,
     sessions,
     tasks,
     users,
