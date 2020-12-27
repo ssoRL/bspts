@@ -6,18 +6,16 @@ use yew::format::{Json};
 use yew::services::fetch::{FetchTask};
 use yew::services::console::{ConsoleService};
 use http::status::StatusCode;
-use crate::store::Store;
-use crate::data_store::StoreID;
-use std::rc::Rc;
-use std::sync::Mutex;
+use crate::data::*;
 use data::user::User;
+use std::cell::{RefCell, Ref};
+use std::rc::Rc;
 
-#[derive(Properties, Clone)]
 struct State {
     /// The tasks that are shown by this component.
-    todo_tasks: TaskList,
+    todo_tasks: ItemPtr<TaskList>,
     /// The tasks that are shown by this component that the user has completed
-    done_tasks: TaskList,
+    done_tasks: ItemPtr<TaskList>,
     edit_popup: bool,
     error_message: Option<String>,
     bspts: i32,
@@ -25,7 +23,7 @@ struct State {
 
 #[derive(Properties, Clone)]
 pub struct Props {
-    pub store: Rc<Mutex<Store>>,
+    pub store: Store,
 }
 
 pub struct Home {
@@ -67,8 +65,8 @@ impl Component for Home {
 
         Self {
             state: State {
-                todo_tasks: TaskList::new(),
-                done_tasks: TaskList::new(),
+                todo_tasks: StoreItem::new_ptr(),
+                done_tasks: StoreItem::new_ptr(),
                 edit_popup: false,
                 error_message: None,
                 bspts: 0,
@@ -108,9 +106,11 @@ impl Component for Home {
             // The message to handle the fetch of tasks coming back
             Msg::ReceiveTasks{tasks, are_done} => {
                 if are_done {
-                    self.state.done_tasks = TaskList::from_vec(tasks);
+                    let task_list = TaskList::from_vec(tasks);
+                    self.state.done_tasks = Rc::new(RefCell::new(task_list));
                 } else {
-                    self.state.todo_tasks = TaskList::from_vec(tasks);
+                    let task_list = TaskList::from_vec(tasks);
+                    self.state.todo_tasks = Rc::new(RefCell::new(task_list));
                     // After getting the todo tasks, get the done tasks
                     self.link.send_message(Msg::FetchTasks(true));
                 }
@@ -130,7 +130,7 @@ impl Component for Home {
             }
             Msg::NewTaskCommitted(task) => {
                 // The task has been added on the backend, add it to the UI now
-                self.state.todo_tasks.push(task);
+                self.state.todo_tasks.borrow_mut().push(task);
                 self.state.edit_popup = false;
                 true
             }
@@ -150,10 +150,10 @@ impl Component for Home {
                 
                 match msg {
                     MsgFromTask::Deleted(task_id) => {
-                        if self.state.todo_tasks.remove(task_id).is_some() {
+                        if self.state.todo_tasks.borrow_mut().remove(task_id).is_some() {
                             // Deleted from the todo list
                             true
-                        } else if self.state.done_tasks.remove(task_id).is_some() {
+                        } else if self.state.done_tasks.borrow_mut().remove(task_id).is_some() {
                             // Deleted from the done list
                             true
                         } else {
@@ -163,9 +163,9 @@ impl Component for Home {
                         }
                     }
                     MsgFromTask::Completed(task_id) => {
-                        match self.state.todo_tasks.remove(task_id) {
+                        match self.state.todo_tasks.borrow_mut().remove(task_id) {
                             Some(task) => {
-                                self.state.done_tasks.push(task);
+                                self.state.done_tasks.borrow_mut().push(task);
                                 true
                             }
                             None => {
@@ -185,17 +185,24 @@ impl Component for Home {
     }
 
     fn rendered(self: &mut Self, _: bool) {
-        let pts_callback = self.link.callback(|user: Rc<User>| {
-            Msg::SetPoints(user.bspts)
+        let pts_callback = self.link.callback(|user: ItemPtr<User>| {
+            Msg::SetPoints(user.borrow().bspts)
         });
-        let mut store_mut = self.props.store.lock().unwrap();
-        let pts_handle = store_mut.user.subscribe(pts_callback, true);
-        self.store_id = Some(pts_handle);
+        let mut store_mut = self.props.store.try_borrow_mut().unwrap();
+        let id = match self.store_id {
+            Some(id) => id,
+            None => {
+                let id = store_mut.get_store_id();
+                self.store_id = Some(id);
+                id
+            }
+        };
+        let pts_handle = store_mut.user.subscribe(id, pts_callback, true);
     }
 
     fn destroy(self: &mut Self) {
         if let Some(id) = self.store_id {
-            let mut store_mut = self.props.store.lock().unwrap();
+            let mut store_mut = self.props.store.try_borrow_mut().unwrap();
             store_mut.user.unsubscribe(id);
             self.store_id = None;
         }
@@ -209,14 +216,14 @@ impl Component for Home {
         }
 
         let msg_handler = self.link.callback(|msg| Msg::HandleMsgFromTask(msg));
-        let todo_tasks_html = if self.state.todo_tasks.is_unset() {
+        let todo_tasks_html = if self.state.todo_tasks.borrow().is_unset() {
             html! {<span>{"Waiting for tasks to be fetched"}</span>}
         } else {
-            self.state.todo_tasks.to_html(&msg_handler, Rc::clone(&self.props.store))
+            self.state.todo_tasks.borrow().to_html(&msg_handler, self.props.store.clone())
         };
 
         
-        let done_tasks_html = self.state.done_tasks.to_html(&msg_handler, Rc::clone(&self.props.store));
+        let done_tasks_html = self.state.done_tasks.borrow().to_html(&msg_handler, self.props.store.clone());
 
         let new_task_html = if self.state.edit_popup {
             let on_done = self.link.callback(|result: EditResult| {

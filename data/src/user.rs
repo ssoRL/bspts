@@ -9,7 +9,7 @@ pub struct NewUser {
 }
 
 /// The fields that are exposed to the user
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Default, Deserialize, Serialize, Clone, Debug)]
 pub struct User {
     pub uname: String,
     pub bspts: i32,

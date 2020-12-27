@@ -8,94 +8,32 @@ use yew::services::fetch::{FetchTask};
 use yew::services::ConsoleService;
 use crate::data::*;
 
-pub struct TaskItem {
-    state: State,
+pub struct TaskField {
     props: Props,
     link: ComponentLink<Self>,
-    fetch_action: Option<FetchTask>,
 }
 
 #[derive(Properties, Clone)]
 pub struct Props {
-    pub task: Box<Task>,
+    pub tasks: ItemPtr<TaskList>,
     /// Send a message to the parent component
-    pub msg_up: Callback<MsgFromTask>,
+    // pub msg_up: Callback<MsgFromTask>,
     pub store: Store,
 }
 
-pub struct State {
-    /// Show the pop up used to edit this task
-    edit_popup: bool,
-}
+// TODO: remove if not using any messages
+pub enum Msg {}
 
-pub enum Msg {
-    EditTask,
-    CompleteTask,
-    TaskIsCompleted(i32),
-    Update(Box<Task>),
-    CancelEdit,
-    DestroySelf,
-}
-
-impl Component for TaskItem {
+impl Component for TaskField {
     type Message = Msg;
     type Properties = Props;
 
     fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
-        let state = State {
-            edit_popup: false,
-        };
-        Self { state, props, link, fetch_action: None }
+        Self { props, link }
     }
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
-        match msg {
-            Msg::EditTask => {
-                self.state.edit_popup = true;
-                true
-            }
-            Msg::CompleteTask => {
-                let callback = self.link.callback(|response: FetchResponse<i32>| {
-                    match response.into_parts() {
-                        (_, Json(Ok(pts))) => {
-                            Msg::TaskIsCompleted(pts)
-                        }
-                        (_, _) => {
-                            // TODO: Real error handling
-                            ConsoleService::error("Could not mark task complete");
-                            Msg::CancelEdit
-                        }
-                    }
-                });
-                let fetch = complete_task(self.props.task.id, callback);
-                self.fetch_action = Some(fetch);
-                true
-            }
-            Msg::TaskIsCompleted(total_points) => {
-                ConsoleService::log(&format!("pts so far: {}", total_points));
-                self.props.store.borrow().user.update(|user| {
-                    user.bspts = total_points;
-                    true
-                });
-                self.fetch_action = None;
-                self.props.msg_up.emit(MsgFromTask::Completed(self.props.task.id));
-                true
-            }
-            Msg::Update(task) => {
-                self.state.edit_popup = false;
-                self.props.task = task;
-                true
-            }
-            Msg::CancelEdit => {
-                self.state.edit_popup = false;
-                true
-            }
-            Msg::DestroySelf => {
-                self.state.edit_popup = false;
-                self.props.msg_up.emit(MsgFromTask::Deleted(self.props.task.id));
-                true
-            }
-        }
+        false
     }
 
     fn change(&mut self, props: Self::Properties) -> ShouldRender {
@@ -104,15 +42,6 @@ impl Component for TaskItem {
     }
 
     fn view(&self) -> Html {
-        if let Some(_) = self.fetch_action {
-            // Return loading indicator
-            return html!{
-                <div
-                    class={"badge task-item loading"}
-                />
-            }
-        }
-
         let task = &self.props.task;
 
         let is_done_class = if task.is_done {

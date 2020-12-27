@@ -4,8 +4,7 @@ mod pages;
 mod apis;
 mod app;
 mod components;
-mod data_store;
-mod store;
+mod data;
 
 use wasm_bindgen::prelude::*;
 use yew::prelude::*;

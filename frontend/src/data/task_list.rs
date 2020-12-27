@@ -4,14 +4,12 @@ use std::collections::VecDeque;
 use data::task::Task;
 use yew::prelude::*;
 // use yew::services::ConsoleService;
-use crate::store::Store;
-use std::rc::Rc;
-use std::sync::Mutex;
+use crate::data::store::Store;
 
 type BoxT = Box<Task>;
 
 /// A list of tasks with some methods to control it and return html
-#[derive(Clone)]
+#[derive(Default, Clone)]
 pub struct TaskList {
     tasks_o: Option<VecDeque<BoxT>>
 }
@@ -48,7 +46,7 @@ impl TaskList {
     }
 
     /// Converts these tasks to html 
-    pub fn to_html<>(self: &Self, msg_handler: &Callback<MsgFromTask>, store: Rc<Mutex<Store>>) -> Html
+    pub fn to_html<>(self: &Self, msg_handler: &Callback<MsgFromTask>, store: Store) -> Html
     {
         match &self.tasks_o {
             Some(tasks) => tasks.iter().map(|task| {
@@ -56,7 +54,7 @@ impl TaskList {
                     <TaskItem
                         task={task}
                         msg_up={msg_handler}
-                        store={Rc::clone(&store)}
+                        store={store.clone()}
                     />
                 }
             }).collect(),

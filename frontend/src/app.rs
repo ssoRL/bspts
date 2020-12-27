@@ -1,13 +1,12 @@
 use yew::prelude::*;
 use yew_router::prelude::*;
+use yew::services::ConsoleService;
 
 use crate::pages::*;
 use crate::apis;
-use crate::store::Store;
-use crate::data_store::store_item::StoreItem;
+use crate::data::*;
 use std::rc::Rc;
-use std::sync::Mutex;
-use data::user::User;
+use std::cell::RefCell;
 
 /// Definition of the routes for this app
 #[derive(Switch, Debug, Clone)]
@@ -39,13 +38,14 @@ impl Component for App {
     }
 
     fn view(&self) -> Html {
+        let store: Store = Rc::new(RefCell::new(UnwrappedStore::new()));
         let render = Router::render(move |route: Route| {
+            ConsoleService::log("routing");
             if let Some(user) = apis::get_stored_user() {
-                let store = Store {
-                    user: StoreItem::new(user),
-                };
+                let store_b = store.borrow();
+                store_b.user.set(user);
                 // If authorized, always go home for now
-                html! {<Home store={Rc::new(Mutex::new(store))} />}
+                html! {<Home store={store.clone()} />}
             } else {
                 match route {
                     // If not authenticated, can only visit the login or sign up page
