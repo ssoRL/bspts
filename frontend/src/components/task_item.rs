@@ -73,7 +73,7 @@ impl Component for TaskItem {
             }
             Msg::TaskIsCompleted(total_points) => {
                 ConsoleService::log(&format!("pts so far: {}", total_points));
-                self.props.store.borrow().user.update(|user| {
+                self.props.store.borrow_mut().user.update(|user| {
                     user.bspts = total_points;
                     true
                 });

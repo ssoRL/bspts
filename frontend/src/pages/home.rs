@@ -8,7 +8,7 @@ use yew::services::console::{ConsoleService};
 use http::status::StatusCode;
 use crate::data::*;
 use data::user::User;
-use std::cell::{RefCell, Ref};
+use std::cell::{RefCell};
 use std::rc::Rc;
 
 struct State {
@@ -19,6 +19,7 @@ struct State {
     edit_popup: bool,
     error_message: Option<String>,
     bspts: i32,
+    user_callback: StoreListener<User>,
 }
 
 #[derive(Properties, Clone)]
@@ -31,7 +32,6 @@ pub struct Home {
     props: Props,
     link: ComponentLink<Self>,
     fetch_tasks: Option<FetchTask>,
-    store_id: Option<StoreID>,
 }
 
 pub enum Msg {
@@ -63,6 +63,13 @@ impl Component for Home {
         // Get the ball rolling on getting the tasks
         link.send_message(Msg::FetchTasks(false));
 
+        let user_callback = Rc::new(link.callback(|user: ItemPtr<User>| {
+            Msg::SetPoints(user.borrow().bspts)
+        }));
+        let store = Rc::clone(&props.store);
+        let mut store_mut = store.try_borrow_mut().expect("Could not borrow store for pts update");
+        store_mut.user.subscribe(&user_callback, true);
+
         Self {
             state: State {
                 todo_tasks: StoreItem::new_ptr(),
@@ -70,11 +77,11 @@ impl Component for Home {
                 edit_popup: false,
                 error_message: None,
                 bspts: 0,
+                user_callback,
             },
             props,
             link,
             fetch_tasks: None,
-            store_id: None,
         }
     }
 
@@ -182,30 +189,6 @@ impl Component for Home {
 
     fn change(&mut self, _: Self::Properties) -> ShouldRender {
         true
-    }
-
-    fn rendered(self: &mut Self, _: bool) {
-        let pts_callback = self.link.callback(|user: ItemPtr<User>| {
-            Msg::SetPoints(user.borrow().bspts)
-        });
-        let mut store_mut = self.props.store.try_borrow_mut().unwrap();
-        let id = match self.store_id {
-            Some(id) => id,
-            None => {
-                let id = store_mut.get_store_id();
-                self.store_id = Some(id);
-                id
-            }
-        };
-        let pts_handle = store_mut.user.subscribe(id, pts_callback, true);
-    }
-
-    fn destroy(self: &mut Self) {
-        if let Some(id) = self.store_id {
-            let mut store_mut = self.props.store.try_borrow_mut().unwrap();
-            store_mut.user.unsubscribe(id);
-            self.store_id = None;
-        }
     }
 
     fn view(&self) -> Html {

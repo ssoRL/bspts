@@ -7,7 +7,7 @@ use std::cell::{Cell, RefCell};
 pub struct UnwrappedStore {
     next_store_id : Cell<i32>,
     pub user: StoreItem<User>,
-    pub todo_tasks: StoreItem<TaskList>,
+    // pub todo_tasks: StoreItem<TaskList>,
 }
 
 impl UnwrappedStore {
@@ -15,14 +15,8 @@ impl UnwrappedStore {
         Self {
             next_store_id: Cell::new(0),
             user: StoreItem::default(),
-            todo_tasks: StoreItem::default(),
+            // todo_tasks: StoreItem::default(),
         }
-    }
-    /// Gets an id for elements to use when subscribing to store items
-    pub fn get_store_id(self: &Self) -> StoreID {
-        let id = self.next_store_id.get();
-        self.next_store_id.replace(id+1);
-        id
     }
 }
 
