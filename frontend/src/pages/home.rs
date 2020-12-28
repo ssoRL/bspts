@@ -20,6 +20,8 @@ struct State {
     error_message: Option<String>,
     bspts: i32,
     _user_callback: StoreListener<User>,
+    _todo_tasks_callback: StoreListener<TaskList>,
+    _done_tasks_callback: StoreListener<TaskList>,
 }
 
 #[derive(Properties, Clone)]
@@ -35,22 +37,15 @@ pub struct Home {
 }
 
 pub enum Msg {
+    /// Do nothing
+    Noop,
     FetchTasks(bool),
-    ReceiveTasks{tasks: Vec<Task>, are_done: bool},
+    ReceiveTasks{tasks: ItemPtr<TaskList>, are_done: bool},
     SetPoints(i32),
     OpenTaskCreationComponent,
     NewTaskCommitted(Box<Task>),
     CancelCreateTask,
     HandleError{msg: String, code: Option<StatusCode>},
-    HandleMsgFromTask(MsgFromTask),
-}
-
-/// Messages that come to this component from the tasks it holds
-pub enum MsgFromTask {
-    /// The task was deleted and should be removed from the flow
-    Deleted(i32),
-    /// The task has been completed (for now!)
-    Completed(i32),
 }
 
 impl Component for Home {
@@ -66,9 +61,19 @@ impl Component for Home {
         let _user_callback = Rc::new(link.callback(|user: ItemPtr<User>| {
             Msg::SetPoints(user.borrow().bspts)
         }));
+        let _todo_tasks_callback = Rc::new(link.callback(|tasks: ItemPtr<TaskList>| {
+            ConsoleService::log("todo callback");
+            Msg::ReceiveTasks{tasks, are_done: false}
+        }));
+        let _done_tasks_callback = Rc::new(link.callback(|tasks: ItemPtr<TaskList>| {
+            ConsoleService::log("done callback");
+            Msg::ReceiveTasks{tasks, are_done: true}
+        }));
         let store = Rc::clone(&props.store);
         let mut store_mut = store.try_borrow_mut().expect("Could not borrow store for pts update");
         store_mut.user.subscribe(&_user_callback, true);
+        store_mut.todo_tasks.subscribe(&_todo_tasks_callback, false);
+        store_mut.done_tasks.subscribe(&_done_tasks_callback, false);
 
         Self {
             state: State {
@@ -78,6 +83,8 @@ impl Component for Home {
                 error_message: None,
                 bspts: 0,
                 _user_callback,
+                _todo_tasks_callback,
+                _done_tasks_callback,
             },
             props,
             link,
@@ -87,12 +94,17 @@ impl Component for Home {
 
     fn update(&mut self, message: Self::Message) -> ShouldRender {
         match message {
+            Msg::Noop => false,
             // Fetch the tasks that the user has saved
             Msg::FetchTasks(are_done) => {
+                let store_clone = self.props.store.clone();
                 let callback = self.link.callback(move |response: FetchResponse<Vec<Task>>| {
+                    ConsoleService::log(format!("Handle fetch tasks return: {:#?}", response).as_str());
                     match response.into_parts() {
                         (_, Json(Ok(tasks))) => {
-                            Msg::ReceiveTasks{tasks, are_done}
+                            let mut mut_store = store_clone.try_borrow_mut().expect("Could not borrow to write tasks");
+                            mut_store.act(StoreAction::SetTasks{tasks, are_done});
+                            Msg::Noop
                         }
                         (parts, _) => {
                             Msg::HandleError{
@@ -103,8 +115,10 @@ impl Component for Home {
                     }
                 });
                 let fetch_task = if are_done {
+                    ConsoleService::log("Fetching done tasks");
                     get_done_tasks(callback)
                 } else {
+                    ConsoleService::log("Fetching todo tasks");
                     get_todo_tasks(callback)
                 };
                 self.fetch_tasks = Some(fetch_task);
@@ -113,11 +127,11 @@ impl Component for Home {
             // The message to handle the fetch of tasks coming back
             Msg::ReceiveTasks{tasks, are_done} => {
                 if are_done {
-                    let task_list = TaskList::from_vec(tasks);
-                    self.state.done_tasks = Rc::new(RefCell::new(task_list));
+                    ConsoleService::log("recv done tasks");
+                    self.state.done_tasks = tasks.clone();
                 } else {
-                    let task_list = TaskList::from_vec(tasks);
-                    self.state.todo_tasks = Rc::new(RefCell::new(task_list));
+                    ConsoleService::log("recv todo tasks");
+                    self.state.todo_tasks = tasks.clone();
                     // After getting the todo tasks, get the done tasks
                     self.link.send_message(Msg::FetchTasks(true));
                 }
@@ -153,37 +167,6 @@ impl Component for Home {
                 }
                 true
             }
-            Msg::HandleMsgFromTask(msg) => {
-                
-                match msg {
-                    MsgFromTask::Deleted(task_id) => {
-                        if self.state.todo_tasks.borrow_mut().remove(task_id).is_some() {
-                            // Deleted from the todo list
-                            true
-                        } else if self.state.done_tasks.borrow_mut().remove(task_id).is_some() {
-                            // Deleted from the done list
-                            true
-                        } else {
-                            let err_msg = format!("Could not find task {} to remove", task_id);
-                            ConsoleService::error(&err_msg);
-                            false
-                        }
-                    }
-                    MsgFromTask::Completed(task_id) => {
-                        match self.state.todo_tasks.borrow_mut().remove(task_id) {
-                            Some(task) => {
-                                self.state.done_tasks.borrow_mut().push(task);
-                                true
-                            }
-                            None => {
-                                let err_msg = format!("Could not find task {} to complete", task_id);
-                                ConsoleService::error(&err_msg);
-                                false
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 
@@ -198,15 +181,14 @@ impl Component for Home {
             }
         }
 
-        let msg_handler = self.link.callback(|msg| Msg::HandleMsgFromTask(msg));
         let todo_tasks_html = if self.state.todo_tasks.borrow().is_unset() {
             html! {<span>{"Waiting for tasks to be fetched"}</span>}
         } else {
-            self.state.todo_tasks.borrow().to_html(&msg_handler, self.props.store.clone())
+            self.state.todo_tasks.borrow().to_html(self.props.store.clone())
         };
 
         
-        let done_tasks_html = self.state.done_tasks.borrow().to_html(&msg_handler, self.props.store.clone());
+        let done_tasks_html = self.state.done_tasks.borrow().to_html(self.props.store.clone());
 
         let new_task_html = if self.state.edit_popup {
             let on_done = self.link.callback(|result: EditResult| {

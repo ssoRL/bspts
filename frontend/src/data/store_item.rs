@@ -39,46 +39,50 @@ where
         Rc::new(RefCell::new(T::default()))
     }
 
+    /// Calls all of the listeners with a new value, if a listener has been dropped
+    /// and can't upgrade, remove it from the list of listeners
+    fn call_listeners(self: &mut Self) {
+        ConsoleService::log(format!("Calling {} listeners", self.listeners.len()).as_str());
+        let filtered_listeners = self.listeners.iter().filter_map(|weak_listener| {
+            if let Some(listener) = weak_listener.upgrade() {
+                listener.emit(Rc::clone(&self.item));
+                Some(Weak::clone(weak_listener))
+            } else {
+                // if a listener has been destroyed, remove it from the list
+                None
+            }
+        }).collect();
+        self.listeners = filtered_listeners;
+    }
+
     /// Call this to update the underlying item
-    /// * run_update: The function that will update the item and return true
-    /// if an update occurred, false in any other case.
-    pub fn update<F>(self: &mut Self, run_update: F)
+    /// * run_update: The function that will update the item and return a some
+    /// if an update occurred, or none in any other case.
+    pub fn update<F, R>(self: &mut Self, run_update: F) -> Option<R>
     where
-        F: FnOnce(&mut T) -> bool
+        F: Fn(&mut T) -> Option<R>
     {
         ConsoleService::log(format!("update refs: {}", Rc::strong_count(&self.item)).as_str());
         let item_was_updated = if let Ok(mut mut_item) = self.item.try_borrow_mut() {
             run_update(&mut mut_item)
         } else {
             ConsoleService::error("Failed to take a mutable reference on the item");
-            false
+            None
         };
 
-        if item_was_updated {
-            // Call each listener
-            let filtered_listeners = self.listeners.iter().filter_map(|weak_listener| {
-                if let Some(listener) = weak_listener.upgrade() {
-                    listener.emit(Rc::clone(&self.item));
-                    Some(Weak::clone(weak_listener))
-                } else {
-                    // if a listener has been destroyed, remove it from the list
-                    None
-                }
-            }).collect();
-            self.listeners = filtered_listeners;
-            // for weak_listener in self.listeners {
-            //     let listener = weak_listener.upgrade()
-            //     listener.1.emit(Rc::clone(&self.item));
-            // }
-        }
+        if item_was_updated.is_some() {
+            self.call_listeners();
+        };
+        item_was_updated
     }
 
     /// Call this to set the value of the underlying item
     /// * value: The new value
     /// if an update occurred, false in any other case.
-    pub fn set(self: &Self, value: T) {
+    pub fn set(self: &mut Self, value: T) {
         ConsoleService::log(format!("set refs: {}", Rc::strong_count(&self.item)).as_str());
         self.item.replace(value);
+        self.call_listeners();
     }
 
     /// Call to subscribe to changes, returns a pointer to the underlying

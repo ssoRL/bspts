@@ -1,7 +1,6 @@
 use data::task::Task;
 use yew::prelude::*;
 use yew::format::{Json};
-use crate::pages::MsgFromTask;
 use crate::components::{Popup, TaskEditor, EditResult};
 use crate::apis::{complete_task, FetchResponse};
 use yew::services::fetch::{FetchTask};
@@ -18,8 +17,6 @@ pub struct TaskItem {
 #[derive(Properties, Clone)]
 pub struct Props {
     pub task: Box<Task>,
-    /// Send a message to the parent component
-    pub msg_up: Callback<MsgFromTask>,
     pub store: Store,
 }
 
@@ -75,10 +72,11 @@ impl Component for TaskItem {
                 ConsoleService::log(&format!("pts so far: {}", total_points));
                 self.props.store.borrow_mut().user.update(|user| {
                     user.bspts = total_points;
-                    true
+                    Some(())
                 });
                 self.fetch_action = None;
-                self.props.msg_up.emit(MsgFromTask::Completed(self.props.task.id));
+                let mut store_mut = self.props.store.try_borrow_mut().expect("Could not borrow store to complete task");
+                store_mut.act(StoreAction::CompleteTask(self.props.task.id));
                 true
             }
             Msg::Update(task) => {
@@ -92,7 +90,8 @@ impl Component for TaskItem {
             }
             Msg::DestroySelf => {
                 self.state.edit_popup = false;
-                self.props.msg_up.emit(MsgFromTask::Deleted(self.props.task.id));
+                let mut store_mut = self.props.store.try_borrow_mut().expect("Could not borrow store to delete task");
+                store_mut.act(StoreAction::DeleteTask(self.props.task.id));
                 true
             }
         }

@@ -1,4 +1,3 @@
-use crate::pages::MsgFromTask;
 use crate::components::TaskItem;
 use std::collections::VecDeque;
 use data::task::Task;
@@ -46,14 +45,13 @@ impl TaskList {
     }
 
     /// Converts these tasks to html 
-    pub fn to_html<>(self: &Self, msg_handler: &Callback<MsgFromTask>, store: Store) -> Html
+    pub fn to_html<>(self: &Self, store: Store) -> Html
     {
         match &self.tasks_o {
             Some(tasks) => tasks.iter().map(|task| {
                     html!{
                     <TaskItem
                         task={task}
-                        msg_up={msg_handler}
                         store={store.clone()}
                     />
                 }
