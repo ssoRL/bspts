@@ -1,7 +1,7 @@
 use yew::prelude::*;
 use yew::services::ConsoleService;
 use std::collections::HashMap;
-use std::cell::{RefCell, Ref};
+use std::cell::{RefCell};
 use std::rc::{Rc, Weak};
 
 pub type ItemPtr<T> = Rc<RefCell<T>>;
@@ -21,13 +21,6 @@ impl<T> StoreItem<T>
 where
     T: Default
 {
-    pub fn new(data: T) -> StoreItem<T> {
-        StoreItem {
-            item: Rc::new(RefCell::new(data)),
-            listeners: vec![],
-        }
-    }
-
     pub fn default() -> StoreItem<T> {
         StoreItem {
             item: StoreItem::new_ptr(),

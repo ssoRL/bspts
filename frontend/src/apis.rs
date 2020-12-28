@@ -28,12 +28,21 @@ pub fn get_stored_user() -> Option<User> {
     Some(user)
 }
 
+/// Gets the user state
+pub fn get_user(callback: FetchCallback<Option<User>>) -> FetchTask {
+    let get = Request::get("/user")
+        .body(Nothing)
+        .unwrap();
+    FetchService::fetch(get, callback).unwrap()
+}
+
 /// Remove the user's id from local storage to
 /// mark them as unauthorized, then re-routes to
 /// the home page
 pub fn sign_out_frontend() {
-    let mut stor = StorageService::new(Area::Local).expect("Could not connect to the local storage");
-    stor.remove(UNAME_KEY);
+    // TODO: Make a call to invalidate the ses cookie on backend
+    // let mut stor = StorageService::new(Area::Local).expect("Could not connect to the local storage");
+    // stor.remove(UNAME_KEY);
     let mut agent_dispatch: RouteAgentDispatcher<()> = RouteAgentDispatcher::default();
     agent_dispatch.send(ChangeRoute(app::Route::HomePage.into()));
 }

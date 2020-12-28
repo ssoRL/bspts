@@ -43,5 +43,6 @@ async fn sign_up(payload: Json<NewUser>, database: Data<PgPool>, ses: Session) -
 
 pub fn configure(config: &mut ServiceConfig) {
     config.service(sign_in);
+    config.service(get_user);
     config.service(sign_up);
 }
