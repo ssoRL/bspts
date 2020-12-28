@@ -19,7 +19,7 @@ struct State {
     edit_popup: bool,
     error_message: Option<String>,
     bspts: i32,
-    user_callback: StoreListener<User>,
+    _user_callback: StoreListener<User>,
 }
 
 #[derive(Properties, Clone)]
@@ -63,12 +63,12 @@ impl Component for Home {
         // Get the ball rolling on getting the tasks
         link.send_message(Msg::FetchTasks(false));
 
-        let user_callback = Rc::new(link.callback(|user: ItemPtr<User>| {
+        let _user_callback = Rc::new(link.callback(|user: ItemPtr<User>| {
             Msg::SetPoints(user.borrow().bspts)
         }));
         let store = Rc::clone(&props.store);
         let mut store_mut = store.try_borrow_mut().expect("Could not borrow store for pts update");
-        store_mut.user.subscribe(&user_callback, true);
+        store_mut.user.subscribe(&_user_callback, true);
 
         Self {
             state: State {
@@ -77,7 +77,7 @@ impl Component for Home {
                 edit_popup: false,
                 error_message: None,
                 bspts: 0,
-                user_callback,
+                _user_callback,
             },
             props,
             link,

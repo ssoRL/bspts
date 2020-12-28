@@ -10,12 +10,24 @@ pub struct UnwrappedStore {
     // pub todo_tasks: StoreItem<TaskList>,
 }
 
+pub enum StoreAction {
+    SetUser(User),
+}
+
 impl UnwrappedStore {
     pub fn new() -> Self {
         Self {
             next_store_id: Cell::new(0),
             user: StoreItem::default(),
             // todo_tasks: StoreItem::default(),
+        }
+    }
+
+    pub fn act(self: &Self, action: StoreAction) {
+        match action {
+            StoreAction::SetUser(user) => {
+                self.user.set(user)
+            },
         }
     }
 }

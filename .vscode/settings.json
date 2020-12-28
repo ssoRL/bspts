@@ -19,6 +19,8 @@
         "pbkdf",
         "postgres",
         "postgresql",
+        "signin",
+        "signup",
         "wasm"
     ]
 }

@@ -42,8 +42,8 @@ impl Component for App {
         let render = Router::render(move |route: Route| {
             ConsoleService::log("routing");
             if let Some(user) = apis::get_stored_user() {
-                let store_b = store.borrow();
-                store_b.user.set(user);
+                store.borrow().act(StoreAction::SetUser(user));
+                // store_b.user.set(user);
                 // If authorized, always go home for now
                 html! {<Home store={store.clone()} />}
             } else {
