@@ -7,8 +7,7 @@ use std::rc::Rc;
 use std::cell::{Cell, RefCell};
 use yew::services::ConsoleService;
 
-pub type Store = Rc<RefCell<UnwrappedStore>>;
-pub type StoreItemRef<T> = RefCell<StoreItem<T>>;
+pub type Store = Rc<UnwrappedStore>;
 
 #[derive(Clone)]
 pub struct UnwrappedStore {
@@ -45,7 +44,7 @@ impl UnwrappedStore {
         }
     }
 
-    pub fn act(self: &mut Self, action: StoreAction) {
+    pub fn act(self: &Self, action: StoreAction) {
         match action {
             StoreAction::StartSession(user) => {
                 self.session_user.set(Some(user))

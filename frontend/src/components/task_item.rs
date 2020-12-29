@@ -70,7 +70,7 @@ impl Component for TaskItem {
             }
             Msg::TaskIsCompleted(total_points) => {
                 ConsoleService::log(&format!("pts so far: {}", total_points));
-                self.props.store.borrow_mut().session_user.update(|user_opt| {
+                self.props.store.session_user.update(|user_opt| {
                     if let Some(user) = user_opt {
                             user.bspts = total_points;
                             Some(())
@@ -79,8 +79,7 @@ impl Component for TaskItem {
                     }
                 });
                 self.fetch_action = None;
-                let mut store_mut = self.props.store.try_borrow_mut().expect("Could not borrow store to complete task");
-                store_mut.act(StoreAction::CompleteTask(self.props.task.id));
+                self.props.store.act(StoreAction::CompleteTask(self.props.task.id));
                 true
             }
             Msg::Update(task) => {
@@ -94,8 +93,7 @@ impl Component for TaskItem {
             }
             Msg::DestroySelf => {
                 self.state.edit_popup = false;
-                let mut store_mut = self.props.store.try_borrow_mut().expect("Could not borrow store to delete task");
-                store_mut.act(StoreAction::DeleteTask(self.props.task.id));
+                self.props.store.act(StoreAction::DeleteTask(self.props.task.id));
                 true
             }
         }

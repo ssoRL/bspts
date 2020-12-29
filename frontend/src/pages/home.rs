@@ -88,8 +88,7 @@ impl Component for Home {
                 let callback = self.link.callback(move |response: FetchResponse<Vec<Task>>| {
                     match response.into_parts() {
                         (_, Json(Ok(tasks))) => {
-                            let mut mut_store = store_clone.try_borrow_mut().expect("Could not borrow to write tasks");
-                            mut_store.act(StoreAction::SetTasks{tasks, are_done});
+                            store_clone.act(StoreAction::SetTasks{tasks, are_done});
                             Msg::Noop
                         }
                         (parts, _) => {
@@ -180,18 +179,9 @@ impl Component for Home {
                 Msg::ReceiveTasks{tasks, are_done: true}
             }));
 
-            match self.props.store.try_borrow_mut() {
-                Ok(mut store_mut) => {
-                    ConsoleService::info("Creating subscriptions");
-                    store_mut.session_user.subscribe(&user_callback, true);
-                    store_mut.todo_tasks.subscribe(&todo_tasks_callback, false);
-                    store_mut.done_tasks.subscribe(&done_tasks_callback, false);
-                }
-                _ => {
-                    ConsoleService::error("Could not borrow to set home callbacks");
-                    panic!();
-                }
-            }
+            self.props.store.session_user.subscribe(&user_callback, true);
+            self.props.store.todo_tasks.subscribe(&todo_tasks_callback, false);
+            self.props.store.done_tasks.subscribe(&done_tasks_callback, false);
 
             self.state.callbacks = Some((user_callback, todo_tasks_callback, done_tasks_callback));
         }

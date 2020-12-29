@@ -46,16 +46,12 @@ impl Component for App {
     type Properties = ();
 
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
-        let store: Store = Rc::new(RefCell::new(UnwrappedStore::new()));
+        let store: Store = Rc::new(UnwrappedStore::new());
 
         let _user_callback = Rc::new(link.callback(|user: ItemPtr<Option<User>>| {
             Msg::ReceiveAuth(user)
         }));
-        {
-            if let Ok(mut mut_store) = store.try_borrow_mut() {
-                mut_store.session_user.subscribe(&_user_callback, false);
-            }
-        }
+        store.session_user.subscribe(&_user_callback, false);
 
         link.send_message(Msg::RequestAuth);
 
@@ -78,8 +74,7 @@ impl Component for App {
                     let ret = match response.into_parts() {
                         (_, Json(Ok(Some(user)))) => {
                             ConsoleService::log("got user back to app");
-                            let mut mut_store = store_clone.try_borrow_mut().expect("Could not borrow to write tasks");
-                            mut_store.act(StoreAction::StartSession(user));
+                            store_clone.act(StoreAction::StartSession(user));
                             Msg::DoRender
                         }
                         _ => {
