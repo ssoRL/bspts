@@ -70,9 +70,13 @@ impl Component for TaskItem {
             }
             Msg::TaskIsCompleted(total_points) => {
                 ConsoleService::log(&format!("pts so far: {}", total_points));
-                self.props.store.borrow_mut().user.update(|user| {
-                    user.bspts = total_points;
-                    Some(())
+                self.props.store.borrow_mut().session_user.update(|user_opt| {
+                    if let Some(user) = user_opt {
+                            user.bspts = total_points;
+                            Some(())
+                    } else {
+                        None
+                    }
                 });
                 self.fetch_action = None;
                 let mut store_mut = self.props.store.try_borrow_mut().expect("Could not borrow store to complete task");

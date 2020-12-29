@@ -7,17 +7,23 @@ use std::rc::Rc;
 use std::cell::{Cell, RefCell};
 use yew::services::ConsoleService;
 
+pub type Store = Rc<RefCell<UnwrappedStore>>;
+pub type StoreItemRef<T> = RefCell<StoreItem<T>>;
+
 #[derive(Clone)]
 pub struct UnwrappedStore {
     next_store_id : Cell<i32>,
-    pub user: StoreItem<User>,
+    pub session_user: StoreItem<Option<User>>,
     pub todo_tasks: StoreItem<TaskList>,
     pub done_tasks: StoreItem<TaskList>,
 }
 
 /// The actions that the store can provide
 pub enum StoreAction {
-    SetUser(User),
+    /// Adds the user to the table
+    StartSession(User),
+    /// Ends the session, logging out
+    EndSession,
     /// Takes a vec of tasks and stores it
     SetTasks{tasks: Vec<Task>, are_done: bool},
     /// Set the specified task as complete
@@ -30,7 +36,10 @@ impl UnwrappedStore {
     pub fn new() -> Self {
         Self {
             next_store_id: Cell::new(0),
-            user: StoreItem::default(),
+            // session_user: RefCell::new(StoreItem::default()),
+            // todo_tasks: RefCell::new(StoreItem::default()),
+            // done_tasks: RefCell::new(StoreItem::default()),
+            session_user: StoreItem::default(),
             todo_tasks: StoreItem::default(),
             done_tasks: StoreItem::default(),
         }
@@ -38,8 +47,11 @@ impl UnwrappedStore {
 
     pub fn act(self: &mut Self, action: StoreAction) {
         match action {
-            StoreAction::SetUser(user) => {
-                self.user.set(user)
+            StoreAction::StartSession(user) => {
+                self.session_user.set(Some(user))
+            }
+            StoreAction::EndSession => {
+                self.session_user.set(None)
             }
             StoreAction::SetTasks{tasks, are_done} => {
                 let task_list = TaskList::from_vec(tasks);
@@ -88,5 +100,3 @@ impl UnwrappedStore {
         }
     }
 }
-
-pub type Store = Rc<RefCell<UnwrappedStore>>;

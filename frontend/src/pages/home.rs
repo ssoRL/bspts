@@ -11,6 +11,12 @@ use data::user::User;
 use std::cell::{RefCell};
 use std::rc::Rc;
 
+type Callbacks = Option<(
+    StoreListener<Option<User>>,
+    StoreListener<TaskList>,
+    StoreListener<TaskList>,
+)>;
+
 struct State {
     /// The tasks that are shown by this component.
     todo_tasks: ItemPtr<TaskList>,
@@ -19,9 +25,7 @@ struct State {
     edit_popup: bool,
     error_message: Option<String>,
     bspts: i32,
-    _user_callback: StoreListener<User>,
-    _todo_tasks_callback: StoreListener<TaskList>,
-    _done_tasks_callback: StoreListener<TaskList>,
+    callbacks: Callbacks,
 }
 
 #[derive(Properties, Clone)]
@@ -53,28 +57,12 @@ impl Component for Home {
     type Properties = Props;
 
     fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
-        ConsoleService::info("Getting tasks");
+        ConsoleService::info("Creating home");
 
         // Get the ball rolling on getting the tasks
         link.send_message(Msg::FetchTasks(false));
 
-        let _user_callback = Rc::new(link.callback(|user: ItemPtr<User>| {
-            Msg::SetPoints(user.borrow().bspts)
-        }));
-        let _todo_tasks_callback = Rc::new(link.callback(|tasks: ItemPtr<TaskList>| {
-            ConsoleService::log("todo callback");
-            Msg::ReceiveTasks{tasks, are_done: false}
-        }));
-        let _done_tasks_callback = Rc::new(link.callback(|tasks: ItemPtr<TaskList>| {
-            ConsoleService::log("done callback");
-            Msg::ReceiveTasks{tasks, are_done: true}
-        }));
-        let store = Rc::clone(&props.store);
-        let mut store_mut = store.try_borrow_mut().expect("Could not borrow store for pts update");
-        store_mut.user.subscribe(&_user_callback, true);
-        store_mut.todo_tasks.subscribe(&_todo_tasks_callback, false);
-        store_mut.done_tasks.subscribe(&_done_tasks_callback, false);
-
+        ConsoleService::info("Creating self");
         Self {
             state: State {
                 todo_tasks: StoreItem::new_ptr(),
@@ -82,9 +70,7 @@ impl Component for Home {
                 edit_popup: false,
                 error_message: None,
                 bspts: 0,
-                _user_callback,
-                _todo_tasks_callback,
-                _done_tasks_callback,
+                callbacks: None,
             },
             props,
             link,
@@ -97,9 +83,9 @@ impl Component for Home {
             Msg::Noop => false,
             // Fetch the tasks that the user has saved
             Msg::FetchTasks(are_done) => {
+                ConsoleService::info("Getting tasks");
                 let store_clone = self.props.store.clone();
                 let callback = self.link.callback(move |response: FetchResponse<Vec<Task>>| {
-                    ConsoleService::log(format!("Handle fetch tasks return: {:#?}", response).as_str());
                     match response.into_parts() {
                         (_, Json(Ok(tasks))) => {
                             let mut mut_store = store_clone.try_borrow_mut().expect("Could not borrow to write tasks");
@@ -172,6 +158,43 @@ impl Component for Home {
 
     fn change(&mut self, _: Self::Properties) -> ShouldRender {
         true
+    }
+
+    fn rendered(&mut self, first_render: bool) {
+        if first_render {
+            ConsoleService::info("Creating callbacks");
+            let user_callback = Rc::new(self.link.callback(|is_user: ItemPtr<Option<User>>| {
+                // ConsoleService::log("Setting user on home");
+                // let pts = match &*is_user.borrow() {
+                //     Some(user) => user.bspts,
+                //     None => 0,
+                // };
+                // Msg::SetPoints(pts)
+                Msg::SetPoints(0)
+            }));
+            let todo_tasks_callback = Rc::new(self.link.callback(|tasks: ItemPtr<TaskList>| {
+                ConsoleService::log("todo callback");
+                Msg::ReceiveTasks{tasks, are_done: false}
+            }));
+            let done_tasks_callback = Rc::new(self.link.callback(|tasks: ItemPtr<TaskList>| {
+                Msg::ReceiveTasks{tasks, are_done: true}
+            }));
+
+            match self.props.store.try_borrow_mut() {
+                Ok(mut store_mut) => {
+                    ConsoleService::info("Creating subscriptions");
+                    store_mut.session_user.subscribe(&user_callback, true);
+                    store_mut.todo_tasks.subscribe(&todo_tasks_callback, false);
+                    store_mut.done_tasks.subscribe(&done_tasks_callback, false);
+                }
+                _ => {
+                    ConsoleService::error("Could not borrow to set home callbacks");
+                    panic!();
+                }
+            }
+
+            self.state.callbacks = Some((user_callback, todo_tasks_callback, done_tasks_callback));
+        }
     }
 
     fn view(&self) -> Html {

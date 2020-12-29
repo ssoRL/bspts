@@ -22,22 +22,23 @@ pub enum Route {
     HomePage,
 }
 
-#[derive(Clone)]
-enum AppState {
-    Auth(User),
-    NoAuth,
-    WaitForAuth,
+pub struct State {
+    store: Store,
+    user: ItemPtr<Option<User>>,
+    _user_callback: StoreListener<Option<User>>,
 }
 
 pub struct App {
-    state: AppState,
+    state: State,
     link: ComponentLink<Self>,
     fetch_task: Option<FetchTask>
 }
 
 pub enum Msg {
+    DoRender,
+    DoNotRender,
     RequestAuth,
-    ReceiveAuth(Option<User>),
+    ReceiveAuth(ItemPtr<Option<User>>),
 }
 
 impl Component for App {
@@ -45,9 +46,25 @@ impl Component for App {
     type Properties = ();
 
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
+        let store: Store = Rc::new(RefCell::new(UnwrappedStore::new()));
+
+        let _user_callback = Rc::new(link.callback(|user: ItemPtr<Option<User>>| {
+            Msg::ReceiveAuth(user)
+        }));
+        {
+            if let Ok(mut mut_store) = store.try_borrow_mut() {
+                mut_store.session_user.subscribe(&_user_callback, false);
+            }
+        }
+
         link.send_message(Msg::RequestAuth);
+
         Self { 
-            state: AppState::WaitForAuth,
+            state: State {
+                store,
+                user: StoreItem::new_ptr(),
+                _user_callback,
+            },
             link,
             fetch_task: None
         }
@@ -56,27 +73,32 @@ impl Component for App {
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
             Msg::RequestAuth => {
-                let callback = self.link.callback(|response: FetchResponse<Option<User>>| {
-                    match response.into_parts() {
-                        (_, Json(Ok(is_user))) => {
-                            Msg::ReceiveAuth(is_user)
+                let store_clone = self.state.store.clone();
+                let callback = self.link.callback(move |response: FetchResponse<Option<User>>| {
+                    let ret = match response.into_parts() {
+                        (_, Json(Ok(Some(user)))) => {
+                            ConsoleService::log("got user back to app");
+                            let mut mut_store = store_clone.try_borrow_mut().expect("Could not borrow to write tasks");
+                            mut_store.act(StoreAction::StartSession(user));
+                            Msg::DoRender
                         }
                         _ => {
-                            Msg::ReceiveAuth(None)
+                            Msg::DoNotRender
                         }
-                    }
+                    };
+                    ConsoleService::log("out of resp");
+                    ret
                 });
                 self.fetch_task = Some(get_user(callback));
                 false
             }
-            Msg::ReceiveAuth(is_user) => {
-                self.state = match is_user {
-                    Some(user) => AppState::Auth(user),
-                    None => AppState::NoAuth,
-                };
-                self.fetch_task = None;
-                true
+            Msg::ReceiveAuth(user) => {
+                ConsoleService::log("recv auth");
+                self.state.user = user;
+                false
             }
+            Msg::DoRender => true,
+            Msg::DoNotRender => false,
         }
     }
 
@@ -85,14 +107,16 @@ impl Component for App {
     }
 
     fn view(&self) -> Html {
-        let store: Store = Rc::new(RefCell::new(UnwrappedStore::new()));
-        let state = self.state.clone();
-        // let state = AppState::NoAuth;
+        let user_opt = self.state.user.clone();
+        let store = self.state.store.clone();
+
         let render = Router::render(move |route: Route| {
             ConsoleService::log("routing");
-            if let AppState::Auth(user) = state.clone() {
-                store.borrow_mut().act(StoreAction::SetUser(user.clone()));
-                // store_b.user.set(user);
+            let has_auth = {
+                let uob = user_opt.borrow();
+                uob.is_some()
+            };
+            if has_auth {
                 // If authorized, always go home for now
                 html! {<Home store={store.clone()} />}
             } else {
