@@ -4,7 +4,6 @@ use yew::format::{Json, Nothing};
 use yew::services::{
     storage::{StorageService, Area},
     fetch::{FetchService, FetchTask, Request, Response},
-    ConsoleService
 };
 use data::task::*;
 use data::user::*;
@@ -16,17 +15,6 @@ pub type FetchResponse<T> = Response<Json<Result<T, Error>>>;
 type FetchCallback<T> = Callback<FetchResponse<T>>;
 
 const UNAME_KEY: &str = "user-name";
-
-/// Check if the user has signed in
-pub fn get_stored_user() -> Option<User> {
-    // There will be a user-name value in local storage if the user has signed in
-    // and gotten back a session cookie
-    let stor = StorageService::new(Area::Local).expect("Could not connect to the local storage");
-    let stored_string: Result<String, anyhow::Error> = stor.restore::<>(UNAME_KEY);
-    let serial = stored_string.ok()?;
-    let user: User = serde_json::from_str(&serial).ok()?;
-    Some(user)
-}
 
 /// Gets the user state
 pub fn get_user(callback: FetchCallback<Option<User>>) -> FetchTask {

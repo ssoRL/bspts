@@ -3,12 +3,13 @@ use data::task::{Task};
 use crate::apis::{get_todo_tasks, get_done_tasks, sign_out_frontend, FetchResponse};
 use crate::components::*;
 use yew::format::{Json};
-use yew::services::fetch::{FetchTask};
-use yew::services::console::{ConsoleService};
+use yew::services::{
+    fetch::FetchTask,
+    console::ConsoleService,
+};
 use http::status::StatusCode;
 use crate::data::*;
 use data::user::User;
-use std::cell::{RefCell};
 use std::rc::Rc;
 
 type Callbacks = Option<(
@@ -163,13 +164,12 @@ impl Component for Home {
         if first_render {
             ConsoleService::info("Creating callbacks");
             let user_callback = Rc::new(self.link.callback(|is_user: ItemPtr<Option<User>>| {
-                // ConsoleService::log("Setting user on home");
-                // let pts = match &*is_user.borrow() {
-                //     Some(user) => user.bspts,
-                //     None => 0,
-                // };
-                // Msg::SetPoints(pts)
-                Msg::SetPoints(0)
+                ConsoleService::log("Setting user on home");
+                let pts = match &*is_user.borrow() {
+                    Some(user) => user.bspts,
+                    None => 0,
+                };
+                Msg::SetPoints(pts)
             }));
             let todo_tasks_callback = Rc::new(self.link.callback(|tasks: ItemPtr<TaskList>| {
                 ConsoleService::log("todo callback");

@@ -4,7 +4,7 @@ use data::{
     user::User,
 };
 use std::rc::Rc;
-use std::cell::{Cell, RefCell};
+use std::cell::{Cell};
 use yew::services::ConsoleService;
 
 pub type Store = Rc<UnwrappedStore>;
@@ -21,8 +21,8 @@ pub struct UnwrappedStore {
 pub enum StoreAction {
     /// Adds the user to the table
     StartSession(User),
-    /// Ends the session, logging out
-    EndSession,
+    // Ends the session, logging out
+    // EndSession,
     /// Takes a vec of tasks and stores it
     SetTasks{tasks: Vec<Task>, are_done: bool},
     /// Set the specified task as complete
@@ -49,9 +49,9 @@ impl UnwrappedStore {
             StoreAction::StartSession(user) => {
                 self.session_user.set(Some(user))
             }
-            StoreAction::EndSession => {
-                self.session_user.set(None)
-            }
+            // StoreAction::EndSession => {
+            //     self.session_user.set(None)
+            // }
             StoreAction::SetTasks{tasks, are_done} => {
                 let task_list = TaskList::from_vec(tasks);
                 if are_done {

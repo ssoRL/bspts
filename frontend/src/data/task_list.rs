@@ -14,10 +14,6 @@ pub struct TaskList {
 }
 
 impl TaskList {
-    pub fn new() -> Self {
-        Self {tasks_o: None}
-    }
-
     /// Instantiate a new Tasks from a vec of tasks
     pub fn from_vec(tasks_vec: Vec<Task>) -> Self {
         let boxed: Vec<BoxT> = tasks_vec.iter().map(|task| -> BoxT {Box::new(task.clone())}).collect();

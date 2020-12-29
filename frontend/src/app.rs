@@ -5,7 +5,6 @@ use yew::services::ConsoleService;
 use crate::pages::*;
 use crate::data::*;
 use std::rc::Rc;
-use std::cell::RefCell;
 use data::user::User;
 use crate::apis::{get_user, FetchResponse};
 use yew::services::fetch::{FetchTask};
