@@ -47,10 +47,12 @@ impl Component for App {
     fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
         let store: Store = Rc::new(UnwrappedStore::new());
 
-        let _user_callback = Rc::new(link.callback(|user: ItemPtr<Option<User>>| {
-            Msg::ReceiveAuth(user)
-        }));
-        store.session_user.subscribe(&_user_callback, false);
+        let _user_callback = store.session_user.subscribe(
+            link.callback(|user| {
+                Msg::ReceiveAuth(user)
+            })
+            , false
+        );
 
         link.send_message(Msg::RequestAuth);
 

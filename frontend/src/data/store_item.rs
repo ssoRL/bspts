@@ -95,17 +95,19 @@ where
     /// * callback: A callback for when the item is mutated
     /// * call_now: true if the callback should be called immediately with
     /// the current value of the item
-    pub fn subscribe(self: &Self, callback: &StoreListener<T>, call_now: bool) {
+    pub fn subscribe(self: &Self, callback: Callback<ItemPtr<T>>, call_now: bool) -> StoreListener<T> {
+        let store_listener: StoreListener<T> = Rc::new(callback);
         ConsoleService::log(format!("sub refs: {}", Rc::strong_count(&self.item)).as_str());
         if call_now {
-            callback.emit(Rc::clone(&self.item));
+            store_listener.emit(Rc::clone(&self.item));
         }
-        let weak_listener: WeakStoreListener<T> = Rc::downgrade(callback);
+        let weak_listener: WeakStoreListener<T> = Rc::downgrade(&store_listener);
         if let Ok(mut listeners) = self.listeners.try_borrow_mut() {
             listeners.push(weak_listener);
         } else {
             ConsoleService::error("Could not borrow listeners to add callback");
             panic!()
-        }
+        };
+        store_listener
     }
 }

@@ -163,25 +163,30 @@ impl Component for Home {
     fn rendered(&mut self, first_render: bool) {
         if first_render {
             ConsoleService::info("Creating callbacks");
-            let user_callback = Rc::new(self.link.callback(|is_user: ItemPtr<Option<User>>| {
-                ConsoleService::log("Setting user on home");
-                let pts = match &*is_user.borrow() {
-                    Some(user) => user.bspts,
-                    None => 0,
-                };
-                Msg::SetPoints(pts)
-            }));
-            let todo_tasks_callback = Rc::new(self.link.callback(|tasks: ItemPtr<TaskList>| {
-                ConsoleService::log("todo callback");
-                Msg::ReceiveTasks{tasks, are_done: false}
-            }));
-            let done_tasks_callback = Rc::new(self.link.callback(|tasks: ItemPtr<TaskList>| {
-                Msg::ReceiveTasks{tasks, are_done: true}
-            }));
-
-            self.props.store.session_user.subscribe(&user_callback, true);
-            self.props.store.todo_tasks.subscribe(&todo_tasks_callback, false);
-            self.props.store.done_tasks.subscribe(&done_tasks_callback, false);
+            let user_callback = self.props.store.session_user.subscribe(
+                self.link.callback(|is_user: ItemPtr<Option<User>>| {
+                    ConsoleService::log("Setting user on home");
+                    let pts = match &*is_user.borrow() {
+                        Some(user) => user.bspts,
+                        None => 0,
+                    };
+                    Msg::SetPoints(pts)
+                }),
+                true
+            );
+            let todo_tasks_callback = self.props.store.todo_tasks.subscribe(
+                self.link.callback(|tasks: ItemPtr<TaskList>| {
+                    ConsoleService::log("todo callback");
+                    Msg::ReceiveTasks{tasks, are_done: false}
+                }),
+                false
+            );
+            let done_tasks_callback = self.props.store.done_tasks.subscribe(
+                self.link.callback(|tasks: ItemPtr<TaskList>| {
+                    Msg::ReceiveTasks{tasks, are_done: true}
+                }),
+                false
+            );
 
             self.state.callbacks = Some((user_callback, todo_tasks_callback, done_tasks_callback));
         }
