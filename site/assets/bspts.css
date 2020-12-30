@@ -3,7 +3,9 @@
   }
 
 body {
-    background: darkgray;
+    background: lightgray;
+    margin: 0;
+    font-family: sans-serif;
 }
 
 h1 {
@@ -66,7 +68,7 @@ h1 {
     width: 80%;
     max-width: 500px;
     padding: 30px 50px;
-    margin: auto;
+    margin: 25px auto;
     background-color: tomato;
     color: whitesmoke;
 }
@@ -169,6 +171,38 @@ h1 {
     text-align: right;
     text-decoration: underline;
     cursor: pointer;
+}
+
+.header .line {
+    width: 100%;
+    background: rgb(20,20,20);
+    color: lightgray;
+    display: flex;
+    flex-direction: row;
+}
+
+.header .bspts {
+    font-size: 50px;
+    margin: 10px;
+}
+
+.header .home-link {
+    color: lightgray;
+    margin: 10px;
+}
+
+.header .routes a {
+    color: lightgray;
+    font-size: 30px;
+    margin: 5px 40px 0;
+    padding: 10px;
+    flex-grow: 1;
+    text-align: center;
+}
+
+.header .routes .selected {
+    color: rgb(20,20,20);
+    background-color: lightgray;
 }
 
 .form .delete:hover {

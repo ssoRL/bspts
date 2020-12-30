@@ -9,14 +9,19 @@ use data::user::User;
 use crate::apis::{get_user, FetchResponse};
 use yew::services::fetch::{FetchTask};
 use yew::format::{Json};
+use crate::components::Header;
 
 /// Definition of the routes for this app
-#[derive(Switch, Debug, Clone)]
+#[derive(Switch, Debug, Clone, Copy)]
 pub enum Route {
     #[to = "/#signin"]
     SignInPage,
     #[to = "/#signup"]
     SignUpPage,
+    #[to = "/#tasks"]
+    Tasks,
+    // #[to = "/#rewards"]
+    // HomePage,
     #[to = "/"]
     HomePage,
 }
@@ -114,7 +119,14 @@ impl Component for App {
             };
             if has_auth {
                 // If authorized, always go home for now
-                html! {<Home store={store.clone()} />}
+                let main_page = match route {
+                    Route::Tasks => html!{<TasksPage store={store.clone()} />},
+                    _ => html!{<Home />}
+                };
+                html! {<>
+                    <Header store={store.clone()} route={route} />
+                    {main_page}
+                </>}
             } else {
                 match route {
                     // If not authenticated, can only visit the login or sign up page
