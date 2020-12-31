@@ -11,6 +11,7 @@ use yew::services::fetch::{FetchTask};
 use yew::format::{Json};
 use crate::components::Header;
 
+// TODO: get naming consistent here (probably w/out Page is better)
 /// Definition of the routes for this app
 #[derive(Switch, Debug, Clone, Copy)]
 pub enum Route {
@@ -20,8 +21,8 @@ pub enum Route {
     SignUpPage,
     #[to = "/#tasks"]
     Tasks,
-    // #[to = "/#rewards"]
-    // HomePage,
+    #[to = "/#rewards"]
+    RewardsPage,
     #[to = "/"]
     HomePage,
 }
@@ -121,6 +122,7 @@ impl Component for App {
                 // If authorized, always go home for now
                 let main_page = match route {
                     Route::Tasks => html!{<TasksPage store={store.clone()} />},
+                    Route::RewardsPage => html!{<RewardsPage store={store.clone()} />},
                     _ => html!{<Home />}
                 };
                 html! {<>

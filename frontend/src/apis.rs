@@ -5,8 +5,11 @@ use yew::services::{
     storage::{StorageService, Area},
     fetch::{FetchService, FetchTask, Request, Response},
 };
-use data::task::*;
-use data::user::*;
+use data::{
+    task::*,
+    user::*,
+    reward::*
+};
 use crate::app;
 use yew_router::prelude::*;
 use yew_router::agent::RouteRequest::ChangeRoute;
@@ -112,6 +115,36 @@ pub fn complete_task(task_id: i32, callback: FetchCallback<i32>) -> FetchTask {
 
 pub fn delete_task(task_id: i32, callback: FetchCallback<()>) -> FetchTask {
         let delete = Request::delete(format!("/task/{}", task_id))
+            .body(Nothing)
+            .unwrap();
+        FetchService::fetch(delete, callback).unwrap()
+}
+
+pub fn get_rewards(callback: FetchCallback<Vec<Reward>>) -> FetchTask {
+    let get = Request::get("/reward")
+        .body(Nothing)
+        .unwrap();
+    FetchService::fetch(get, callback).unwrap()
+}
+
+pub fn new_reward(new_reward: &NewReward, callback: FetchCallback<Reward>) -> FetchTask {
+        let post = Request::post("/reward")
+            .header("Content-Type", "application/json")
+            .body(Json(new_reward))
+            .unwrap();
+        FetchService::fetch(post, callback).unwrap()
+}
+
+pub fn update_reward(reward_id: i32, reward_edits: NewReward, callback: FetchCallback<Reward>) -> FetchTask {
+        let post = Request::put(format!("/reward/{}", reward_id))
+            .header("Content-Type", "application/json")
+            .body(Json(&reward_edits))
+            .unwrap();
+        FetchService::fetch(post, callback).unwrap()
+}
+
+pub fn delete_reward(reward_id: i32, callback: FetchCallback<()>) -> FetchTask {
+        let delete = Request::delete(format!("/reward/{}", reward_id))
             .body(Nothing)
             .unwrap();
         FetchService::fetch(delete, callback).unwrap()

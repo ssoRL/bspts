@@ -9,7 +9,8 @@ yew tests (Might have to do some original work here X_X)
 reformat use (just fmt in general??)
 
 FEATURES:
-frontend rewards
+new task create should go thru the store, it's a bit sketchy atm
+also make sure updates are working in the UI
 set icons
 styling for no auth page
 make routing work on non-hashtag routes

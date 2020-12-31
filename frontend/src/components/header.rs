@@ -88,6 +88,7 @@ impl Component for Header {
     fn view(&self) -> Html {
         let (tasks_class, rewards_class) = match self.props.route {
             Route::Tasks => ("selected", ""),
+            Route::RewardsPage => ("", "selected"),
             _ => ("", ""),
         };
         html! {
@@ -103,8 +104,7 @@ impl Component for Header {
                     </div>
                     <div class="line routes">
                         <RouterAnchor<Route> classes={tasks_class} route={Route::Tasks} >{"Tasks"}</RouterAnchor<Route>>
-                        // <span class="flex-buffer" />
-                        <a classes={rewards_class} href="#">{"Rewards"}</a>
+                        <RouterAnchor<Route> classes={rewards_class} route={Route::RewardsPage} >{"Rewards"}</RouterAnchor<Route>>
                     </div>
                 </div>
             </>

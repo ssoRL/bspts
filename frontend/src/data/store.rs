@@ -1,11 +1,13 @@
 use crate::data::*;
 use data::{
-    task::Task,
     user::User,
+    task::Task,
+    reward::Reward,
 };
 use std::rc::Rc;
 use std::cell::{Cell};
 use yew::services::ConsoleService;
+use std::collections::VecDeque;
 
 pub type Store = Rc<UnwrappedStore>;
 
@@ -15,6 +17,7 @@ pub struct UnwrappedStore {
     pub session_user: StoreItem<Option<User>>,
     pub todo_tasks: StoreItem<TaskList>,
     pub done_tasks: StoreItem<TaskList>,
+    pub rewards: StoreItem<VecDeque<Reward>>,
 }
 
 /// The actions that the store can provide
@@ -29,18 +32,18 @@ pub enum StoreAction {
     CompleteTask(i32),
     /// Delete the task with the specified id
     DeleteTask(i32),
+    SetRewards(Vec<Reward>),
+    DeleteReward(i32),
 }
 
 impl UnwrappedStore {
     pub fn new() -> Self {
         Self {
             next_store_id: Cell::new(0),
-            // session_user: RefCell::new(StoreItem::default()),
-            // todo_tasks: RefCell::new(StoreItem::default()),
-            // done_tasks: RefCell::new(StoreItem::default()),
             session_user: StoreItem::default(),
             todo_tasks: StoreItem::default(),
             done_tasks: StoreItem::default(),
+            rewards: StoreItem::default(),
         }
     }
 
@@ -92,6 +95,24 @@ impl UnwrappedStore {
                     ()
                 } else {
                     let err_msg = format!("Could not find task {} to remove", task_id);
+                    ConsoleService::error(&err_msg);
+                    ()
+                }
+            }
+            StoreAction::SetRewards(rewards) => {
+                let dq_rewards: VecDeque<Reward> = rewards.into();
+                self.rewards.set(dq_rewards);
+            }
+            StoreAction::DeleteReward(reward_id) => {
+                let remove_reward = move |rewards: &mut VecDeque<Reward>| {
+                    let i = rewards.iter().position(|r| r.id == reward_id)?;
+                    rewards.remove(i)
+                };
+                if self.rewards.update(remove_reward).is_some() {
+                    // Deleted from the todo list
+                    ()
+                } else {
+                    let err_msg = format!("Could not find task {} to remove", reward_id);
                     ConsoleService::error(&err_msg);
                     ()
                 }
