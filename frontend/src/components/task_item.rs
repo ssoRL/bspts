@@ -161,7 +161,7 @@ impl Component for TaskItem {
                 </div>
                 {
                     if self.state.edit_popup {
-                        let on_done = self.link.callback(|result: EditResult| {
+                        let on_done = self.link.callback(|result: EditResult<Task>| {
                             match result {
                                 EditResult::Return(task) => Msg::Update(task),
                                 EditResult::Cancel => Msg::CancelEdit,

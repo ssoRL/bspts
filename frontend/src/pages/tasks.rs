@@ -184,7 +184,7 @@ impl Component for TasksPage {
         let done_tasks_html = self.state.done_tasks.borrow().to_html(self.props.store.clone());
 
         let new_task_html = if self.state.edit_popup {
-            let on_done = self.link.callback(|result: EditResult| {
+            let on_done = self.link.callback(|result: EditResult<Task>| {
                 match result {
                     EditResult::Return(task) => Msg::NewTaskCommitted(task),
                     _ => Msg::CancelCreateTask

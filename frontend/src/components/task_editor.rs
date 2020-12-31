@@ -7,6 +7,7 @@ use yew::format::{Json};
 use crate::apis::{commit_new_task, update_task, delete_task, FetchResponse};
 use yew::services::fetch::{FetchTask};
 use yew::prelude::*;
+use crate::components::EditResult;
 
 pub struct TaskEditor {
     state: State,
@@ -16,21 +17,11 @@ pub struct TaskEditor {
     fetch_action: Option<FetchTask>,
 }
 
-/// The result of this edit
-pub enum EditResult {
-    /// Edit/create succeeded. Return new task
-    Return(Box<Task>),
-    /// The creation was canceled with no effect
-    Cancel,
-    /// The task was destroyed
-    Destroy,
-}
-
 #[derive(Properties, Clone)]
 pub struct Props {
     /// A task to edit, or none to create a new task
     pub task_to_edit: Option<Box<Task>>,
-    pub on_done: Callback<EditResult>,
+    pub on_done: Callback<EditResult<Task>>,
 }
 
 /// THe mode the task editor is in: create a new task or edit and existing
@@ -196,7 +187,7 @@ impl Component for TaskEditor {
                 true
             }
             Msg::ReturnTask(task) => {
-                self.props.on_done.emit(EditResult::Return(Box::new(task)));
+                self.props.on_done.emit(EditResult::<Task>::Return(Box::new(task)));
                 true
             }
             Msg::DeleteTask => {
@@ -224,12 +215,12 @@ impl Component for TaskEditor {
                 }
             }
             Msg::TaskDeleted => {
-                self.props.on_done.emit(EditResult::Destroy);
+                self.props.on_done.emit(EditResult::<Task>::Destroy);
                 self.fetch_action = None;
                 true
             }
             Msg::CancelEdit => {
-                self.props.on_done.emit(EditResult::Cancel);
+                self.props.on_done.emit(EditResult::<Task>::Cancel);
                 true
             }
             Msg::Noop => {
