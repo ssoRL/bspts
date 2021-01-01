@@ -26,6 +26,7 @@ async fn main() -> std::io::Result<()> {
                       .secure(false)
             )
             .configure(route::task::configure)
+            .configure(route::reward::configure)
             .configure(route::user::configure)
             .service(fs::Files::new("/", "./site").index_file("index.html"))
     })

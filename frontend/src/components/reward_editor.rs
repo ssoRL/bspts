@@ -131,6 +131,7 @@ impl Component for RewardEditor {
                 true
             }
             Msg::ReturnReward(reward) => {
+                self.fetch_action = None;
                 self.props.on_done.emit(EditResult::Return(Box::new(reward)));
                 true
             }

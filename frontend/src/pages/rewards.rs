@@ -104,6 +104,7 @@ impl Component for RewardsPage {
                     rewards.push_front(*reward.clone());
                     Some(())
                 });
+                self.state.edit_popup = false;
                 true
             }
             Msg::CancelCreateReward => {
