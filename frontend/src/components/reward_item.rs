@@ -97,7 +97,7 @@ impl Component for RewardItem {
                 //onclick={on_tick}
                 title={&reward.description}
             >
-                <div class="reward-name">{&reward.name}</div>
+                <div class="name">{&reward.name}</div>
                 <div class="info">{pts_desc}</div>
                 <i class="thumbnail fas fa-coffee"></i>
                 <div class="badge-line">

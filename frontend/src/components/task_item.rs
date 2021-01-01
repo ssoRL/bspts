@@ -109,7 +109,7 @@ impl Component for TaskItem {
             // Return loading indicator
             return html!{
                 <div
-                    class={"badge task-item loading"}
+                    class={"badge loading"}
                 />
             }
         }
@@ -145,12 +145,12 @@ impl Component for TaskItem {
 
         html! {
             <div
-                class={format!("badge task-item {}", is_done_class)}
+                class={format!("badge {}", is_done_class)}
                 // TODO: allow the user to complete tasks
                 //onclick={on_tick}
                 title={&task.description}
             >
-                <div class="task-name">{&task.name}</div>
+                <div class="name">{&task.name}</div>
                 <div class="info">{pts_desc}</div>
                 <div class="sub-info">{do_by}</div>
                 <i class="thumbnail fas fa-coffee"></i>

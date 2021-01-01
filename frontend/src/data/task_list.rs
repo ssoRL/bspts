@@ -40,6 +40,13 @@ impl TaskList {
         self.tasks_o.is_none()
     }
 
+    pub fn is_empty(self: &Self) -> bool {
+        match &self.tasks_o {
+            Some(tasks) => tasks.len() == 0,
+            None => true,
+        }
+    }
+
     /// Converts these tasks to html 
     pub fn to_html<>(self: &Self, store: Store) -> Html
     {

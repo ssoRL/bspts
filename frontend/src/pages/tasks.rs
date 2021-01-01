@@ -53,12 +53,11 @@ impl Component for TasksPage {
     type Properties = Props;
 
     fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
-        ConsoleService::info("Creating home");
+        ConsoleService::info("Creating tasks");
 
         // Get the ball rolling on getting the tasks
         link.send_message(Msg::FetchTasks(false));
 
-        ConsoleService::info("Creating self");
         Self {
             state: State {
                 todo_tasks: StoreItem::new_ptr(),
@@ -176,12 +175,28 @@ impl Component for TasksPage {
 
         let todo_tasks_html = if self.state.todo_tasks.borrow().is_unset() {
             html! {<span>{"Waiting for tasks to be fetched"}</span>}
+        } else if self.state.todo_tasks.borrow().is_empty() {
+            html! {<></>}
         } else {
-            self.state.todo_tasks.borrow().to_html(self.props.store.clone())
+            html! {<>
+                {badge_field_header("Things yet to do")}
+                <div class="badge-field">
+                    {self.state.todo_tasks.borrow().to_html(self.props.store.clone())}
+                </div>
+            </>}
         };
 
         
-        let done_tasks_html = self.state.done_tasks.borrow().to_html(self.props.store.clone());
+        let done_tasks_html = if self.state.done_tasks.borrow().is_empty() {
+            html! {<></>}
+        } else {
+            html! {<>
+                {badge_field_header("Ya' did it!")}
+                <div class="badge-field">
+                    {self.state.done_tasks.borrow().to_html(self.props.store.clone())}
+                </div>
+            </>}
+        };
 
         let new_task_html = if self.state.edit_popup {
             let on_done = self.link.callback(|result: EditResult<Task>| {
@@ -200,7 +215,7 @@ impl Component for TasksPage {
         } else {
             html! {
                 <div 
-                    class="add-new-task button"
+                    class="top button"
                     onclick={self.link.callback(|_| {Msg::OpenTaskCreationComponent})}
                 >
                     {"Add New Task"}
@@ -208,14 +223,10 @@ impl Component for TasksPage {
             }
         };
 
-        html! {
-            <>
-                <div>{new_task_html}</div>
-                <div class="task-list-header">{"Things yet to do"}</div>
-                <div class="badge-field">{todo_tasks_html}</div>
-                <div class="task-list-header">{"Ya' did it!"}</div>
-                <div class="badge-field">{done_tasks_html}</div>
-            </>
-        }
+        html! {<>
+            <div>{new_task_html}</div>
+            {todo_tasks_html}
+            {done_tasks_html}
+        </>}
     }
 }

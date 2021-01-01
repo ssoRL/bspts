@@ -1,9 +1,17 @@
 :root {
-    --text-color: rgb(50,50,50);
+    --dark-color: rgb(20,20,20);
+    --medium-dark--color: darkslategray;
+    --light-color: lightgray;
+    --action-button-color: tomato;
+
+    --header-size: 50px;
+    --sub-header-size: 40px;
+    --info-size: 20px;
+    --sub-info-size: 15px;
   }
 
 body {
-    background: lightgray;
+    background: var(--light-color);
     margin: 0;
     font-family: sans-serif;
 }
@@ -17,6 +25,29 @@ h1 {
     margin-bottom: 0;
 }
 
+/* Styles to display a title over a field of badges */
+.badge-field-header {
+    width: 90%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin: auto;
+}
+
+.badge-field-header .buffer {
+    flex-grow: 1;
+    height: 0;
+    border-top: 1px solid var(--medium-dark--color);
+}
+
+.badge-field-header .title {
+    font-size: var(--info-size);
+    color: var(--medium-dark--color);
+    min-width: 20%;
+    margin: 0 10px;
+    text-align: center;
+}
+
 /* The field of square shaped badges that overflow into the next line */
 .badge-field {
     width: 80%;
@@ -26,7 +57,7 @@ h1 {
     flex-wrap: wrap;
 }
 
-.badge {
+.badge-field .badge {
     position: relative;
     width: 210px;
     height: 210px;
@@ -50,6 +81,36 @@ h1 {
     font-family: sans-serif;
 }
 
+/* The styling of elements on the badge */
+.badge .thumbnail {
+    font-size: 90px;
+    color: green;
+}
+
+.badge .name {
+    font-size: var(--sub-header-size);
+}
+
+.badge .info {
+    font-size: var(--info-size);
+    font-weight: bold;
+}
+
+.badge .sub-info {
+    font-size: var(--sub-info-size);
+}
+
+.badge .edit {
+    padding: 8px 18px;
+    border: 2px solid green;
+}
+
+.badge .done {
+    padding: 10px 20px;
+    background-color: green;
+    color: white;
+}
+
 /* Generic styles */
 .flex-buffer {
     flex-grow: 1;
@@ -60,47 +121,17 @@ h1 {
     font-variant: small-caps;
 }
 
-/* Styling for the "Add Task" component */
-.add-new-task.button {
-    font-size: 70px;
+/* Styling for the top button component */
+.top.button {
+    font-size: var(--sub-header-size);
     font-family: sans-serif;
     text-align: center;
-    width: 80%;
-    max-width: 500px;
-    padding: 30px 50px;
-    margin: 25px auto;
-    background-color: tomato;
-    color: whitesmoke;
-}
-
-/* Styles for the items on the task page */
-.task-item .task-name {
-    font-size: 40px;
-}
-
-.task-item .info {
-    font-size: 20px;
-    font-weight: bold;
-}
-
-.task-item .sub-info {
-    font-size: 15px;
-}
-
-.task-item .thumbnail {
-    font-size: 90px;
-    color: green;
-}
-
-.task-item .edit {
-    padding: 8px 18px;
-    border: 2px solid green;
-}
-
-.task-item .done {
+    width: 30%;
+    max-width: 300px;
     padding: 10px 20px;
-    background-color: green;
-    color: white;
+    margin: 25px auto;
+    background-color: var(--action-button-color);
+    color: var(--light-color);
 }
 
 /* Styles for the popups */
@@ -134,7 +165,7 @@ h1 {
 .form {
     background-color: white;
     color: var(--text-color);
-    font-size: 30px;
+    font-size: var(--sub-header-size);
     font-family: sans-serif;
 }
 
@@ -143,7 +174,7 @@ h1 {
 }
 
 .title-input {
-    font-size: 50px;
+    font-size: var(--header-size);
     display: block;
     margin: auto;
     width: 80%;
@@ -157,8 +188,8 @@ h1 {
 
 .form .save.button {
     padding: 10px 20px;
-    background-color: green;
-    color: white;
+    background-color: var(--action-button-color);
+    color: var(--light-color);
 }
 
 .form .cancel.button {
@@ -167,7 +198,7 @@ h1 {
 }
 
 .form .delete {
-    font-size: 20px;
+    font-size: var(--info-size);
     text-align: right;
     text-decoration: underline;
     cursor: pointer;
@@ -176,24 +207,24 @@ h1 {
 .header .line {
     width: 100%;
     background: rgb(20,20,20);
-    color: lightgray;
+    color: var(--light-color);
     display: flex;
     flex-direction: row;
 }
 
 .header .bspts {
-    font-size: 50px;
+    font-size: var(--header-size);
     margin: 10px;
 }
 
 .header .home-link {
-    color: lightgray;
+    color: var(--light-color);
     margin: 10px;
 }
 
 .header .routes a {
-    color: lightgray;
-    font-size: 30px;
+    color: var(--light-color);
+    font-size: var(--sub-header-size);
     margin: 5px 40px 0;
     padding: 10px;
     flex-grow: 1;
@@ -201,8 +232,8 @@ h1 {
 }
 
 .header .routes .selected {
-    color: rgb(20,20,20);
-    background-color: lightgray;
+    color: var(--dark-color);
+    background-color: var(--light-color);
 }
 
 .form .delete:hover {

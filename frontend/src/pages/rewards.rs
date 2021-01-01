@@ -176,10 +176,10 @@ impl Component for RewardsPage {
         } else {
             html! {
                 <div 
-                    class="add-new-reward button"
+                    class="top button"
                     onclick={self.link.callback(|_| {Msg::OpenRewardCreationComponent})}
                 >
-                    {"Add New Reward"}
+                    {"Add Reward"}
                 </div>
             }
         };
