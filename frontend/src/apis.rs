@@ -135,6 +135,15 @@ pub fn new_reward(new_reward: &NewReward, callback: FetchCallback<Reward>) -> Fe
         FetchService::fetch(post, callback).unwrap()
 }
 
+/// You've done the reward. Probably well deserved!
+pub fn do_reward(reward_id: i32, callback: FetchCallback<i32>) -> FetchTask {
+        let post = Request::post(format!("/reward/do/{}", reward_id))
+            .header("Content-Type", "application/json")
+            .body(Nothing)
+            .unwrap();
+        FetchService::fetch(post, callback).unwrap()
+}
+
 pub fn update_reward(reward_id: i32, reward_edits: NewReward, callback: FetchCallback<Reward>) -> FetchTask {
         let post = Request::put(format!("/reward/{}", reward_id))
             .header("Content-Type", "application/json")

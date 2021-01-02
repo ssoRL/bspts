@@ -1,8 +1,13 @@
 use data::reward::Reward;
 use yew::prelude::*;
+use yew::format::{Json};
 use crate::components::{Popup, RewardEditor, EditResult};
-use yew::services::fetch::{FetchTask};
+use yew::services::{
+    fetch::FetchTask,
+    console::ConsoleService,
+};
 use crate::data::*;
+use crate::apis::{do_reward, FetchResponse};
 
 pub struct RewardItem {
     state: State,
@@ -23,6 +28,7 @@ pub struct State {
 }
 
 pub enum Msg {
+    TakeReward,
     EditReward,
     Update(Box<Reward>),
     CancelEdit,
@@ -43,6 +49,28 @@ impl Component for RewardItem {
 
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
+            Msg::TakeReward => {
+                let store = self.props.store.clone();
+                let callback = self.link.callback(move |response: FetchResponse<i32>| {
+                    match response.into_parts() {
+                        (_, Json(Ok(pts))) => {
+                            store.session_user.update(|user_opt| {
+                                match user_opt {
+                                    Some(user) => {
+                                        user.bspts = pts;
+                                        Some(())
+                                    }
+                                    None => None
+                                }
+                            });
+                        }
+                        _ => ConsoleService::error("Could not mark task as done")
+                    }
+                    Msg::Noop
+                });
+                self.fetch_action = Some(do_reward(self.props.reward.id, callback));
+                false
+            }
             Msg::EditReward => {
                 self.state.edit_popup = true;
                 true
@@ -88,7 +116,7 @@ impl Component for RewardItem {
         };
 
         let click_edit = self.link.callback(|_| {Msg::EditReward});
-        let click_done = self.link.callback(|_| {Msg::Noop});
+        let click_done = self.link.callback(|_| {Msg::TakeReward});
 
         html! {
             <div
