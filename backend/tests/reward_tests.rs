@@ -2,7 +2,7 @@ mod setup;
 
 use backend_lib::*;
 use actix_web::{self, test, http::Method};
-use data::{user::User, reward::*};
+use data::{user::User, reward::*, icon::RewardIcon};
 use setup::*;
 
 #[actix_rt::test]
@@ -33,6 +33,7 @@ async fn add_reward() {
         name: reward_name.clone(),
         description: "".to_string(),
         bspts: 1,
+        icon: RewardIcon::default(),
     };
     let req = test::TestRequest::with_header("content-type", "text/plain")
         .uri("/reward")
@@ -66,6 +67,7 @@ async fn update_reward() {
         name: reward_name.clone(),
         description: "".to_string(),
         bspts: 1,
+        icon: RewardIcon::default(),
     };
     let set_req = test::TestRequest::with_header("content-type", "text/plain")
         .uri("/reward")
@@ -118,6 +120,7 @@ async fn delete_reward() {
         name: reward_name.clone(),
         description: "".to_string(),
         bspts: 1,
+        icon: RewardIcon::default(),
     };
     let set_req = test::TestRequest::with_header("content-type", "text/plain")
         .uri("/reward")
@@ -184,6 +187,7 @@ async fn do_reward() {
         name: "RewardName".to_string(),
         description: "".to_string(),
         bspts: reward_points,
+        icon: RewardIcon::default(),
     };
     let set_req = test::TestRequest::with_header("content-type", "text/plain")
         .uri("/reward")

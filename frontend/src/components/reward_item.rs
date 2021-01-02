@@ -1,7 +1,7 @@
 use data::reward::Reward;
 use yew::prelude::*;
 use yew::format::{Json};
-use crate::components::{Popup, RewardEditor, EditResult};
+use crate::components::{Popup, RewardEditor, EditResult, RewardIconComponent};
 use yew::services::{
     fetch::FetchTask,
     console::ConsoleService,
@@ -127,7 +127,7 @@ impl Component for RewardItem {
             >
                 <div class="name">{&reward.name}</div>
                 <div class="info">{pts_desc}</div>
-                <i class="thumbnail fas fa-coffee"></i>
+                <RewardIconComponent icon={self.props.reward.icon.clone()} />
                 <div class="badge-line">
                     <span class="edit button" onclick={click_edit}>{"Edit"}</span>
                     <span class="flex-buffer"></span>

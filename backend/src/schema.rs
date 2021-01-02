@@ -5,6 +5,7 @@ table! {
         name -> Text,
         description -> Text,
         bspts -> Int4,
+        icon -> Text,
     }
 }
 

@@ -14,6 +14,7 @@ fn q_reward_to_reward(q: &QReward) -> Reward {
         description: q.description.clone(),
         user_id: q.user_id,
         bspts: q.bspts,
+        icon: q.icon.clone().into(),
     }
 }
 
@@ -54,6 +55,7 @@ pub fn commit_new_reward(new_reward: NewReward, user: QUser, conn: PgPooledConne
         name: &new_reward.name,
         description: &new_reward.description,
         bspts: new_reward.bspts,
+        icon: new_reward.icon.into(),
     };
     
     let committed_reward: QReward = diesel::insert_into(rewards::table)

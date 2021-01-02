@@ -8,6 +8,7 @@ use crate::apis::{new_reward, update_reward, delete_reward, FetchResponse};
 use yew::services::fetch::{FetchTask};
 use yew::prelude::*;
 use crate::components::EditResult;
+use data::icon::RewardIcon;
 
 pub struct RewardEditor {
     state: State,
@@ -60,6 +61,7 @@ impl Component for RewardEditor {
                     name: "".to_string(),
                     description: "".to_string(),
                     bspts: 0,
+                    icon: RewardIcon::default(),
                 }
             )}
             Some(reward) => {(
@@ -68,6 +70,7 @@ impl Component for RewardEditor {
                     name: reward.name,
                     description: reward.description,
                     bspts: reward.bspts,
+                    icon: RewardIcon::default(),
                 }
             )},
         };

@@ -72,6 +72,7 @@ pub struct QReward {
     pub name: String,
     pub description: String,
     pub bspts: i32,
+    pub icon: String,
 }
 
 #[derive(Insertable)]
@@ -81,4 +82,5 @@ pub struct InsertableReward<'a> {
     pub name: &'a str,
     pub description: &'a str,
     pub bspts: i32,
+    pub icon: String,
 }
