@@ -2,7 +2,7 @@ mod setup;
 
 use backend_lib::*;
 use actix_web::{self, test, http::Method};
-use data::reward::*;
+use data::{user::User, reward::*};
 use setup::*;
 
 #[actix_rt::test]
@@ -159,4 +159,62 @@ async fn delete_reward() {
             ))
         }
     }
+}
+
+#[actix_rt::test]
+async fn do_reward() {
+    println!("Setup complete test");
+    let user = make_user("complete_reward");
+    let pool = get_connection_pool();
+    let session_cookie = login(&user, &pool).await.expect("Failed to login");
+    let mut app = make_service(
+        |c| {
+            c.service(route::user::get_user);
+            c.service(route::reward::get_all);
+            c.service(route::reward::get_by_id);
+            c.service(route::reward::new);
+            c.service(route::reward::did_it);
+        },
+        &pool
+    ).await;
+    let reward_points = 1;
+
+    println!("Create the reward");
+    let reward = NewReward {
+        name: "RewardName".to_string(),
+        description: "".to_string(),
+        bspts: reward_points,
+    };
+    let set_req = test::TestRequest::with_header("content-type", "text/plain")
+        .uri("/reward")
+        .method(Method::POST)
+        .cookie(session_cookie.clone())
+        .set_json(&reward)
+        .to_request();
+    let set_resp = test::call_service(&mut app, set_req).await;
+    println!("{:#?}", set_resp);
+    assert!(set_resp.status().is_success());
+    let saved_reward: Reward = test::read_body_json(set_resp).await;
+
+    println!("Now make a call to do the reward");
+    let complete_req = test::TestRequest::with_header("content-type", "text/plain")
+        .uri(format!("/reward/do/{id}", id = saved_reward.id).as_str())
+        .method(Method::POST)
+        .cookie(session_cookie.clone())
+        .to_request();
+    let complete_resp = test::call_service(&mut app, complete_req).await;
+    println!("{:#?}", complete_resp);
+    assert!(complete_resp.status().is_success());
+
+    println!("Get the user and ensure points were subtracted");
+    let get_user_req = test::TestRequest::with_header("content-type", "text/plain")
+        .uri("/user")
+        .method(Method::GET)
+        .cookie(session_cookie.clone())
+        .to_request();
+    let get_user_resp = test::call_service(&mut app, get_user_req).await;
+    println!("{:#?}", get_user_resp);
+    assert!(get_user_resp.status().is_success());
+    let user: User = test::read_body_json(get_user_resp).await;
+    assert_eq!(user.bspts, -reward_points, "BS Pts were not subtracted");
 }

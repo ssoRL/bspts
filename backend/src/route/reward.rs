@@ -6,7 +6,7 @@ use actix_web::{
     web::{self, Data, Json, ServiceConfig}
 };
 use data::reward::*;
-use crate::query::reward::*;
+use crate::query::{self, reward::*};
 use actix_session::{Session};
 use crate::PgPool;
 use crate::route::*;
@@ -34,6 +34,22 @@ async fn new(payload: Json<NewReward>, data: Data<PgPool>, ses: Session) -> Rsp<
         let Json(new_reward) = payload;
         let committed_reward = commit_new_reward(new_reward, user, conn);
         Ok(Json(committed_reward))
+    })
+}
+
+/// Takes the id of a reward and removes points from the user's
+/// total equal to the reward's cost.
+#[post("/reward/do/{id}")]
+async fn did_it(
+    web::Path(id): web::Path<i32>,
+    data: Data<PgPool>,
+    ses: Session
+) -> Rsp<i32> {
+    with_auth(ses, data, |user, conn| {
+        let reward = get_reward(id, &conn)?;
+        let cost = -reward.bspts;
+        let new_pts = query::user::update_bspts(user.id, cost, &conn)?;
+        Ok(Json(new_pts))
     })
 }
 
@@ -67,6 +83,7 @@ pub fn configure(config: &mut ServiceConfig) {
     config.service(get_all);
     config.service(get_by_id);
     config.service(new);
+    config.service(did_it);
     config.service(update);
     config.service(delete);
 }
