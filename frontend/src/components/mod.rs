@@ -7,6 +7,7 @@ mod edit_result;
 mod popup;
 mod header;
 mod badge_field_header;
+mod icon_chooser;
 
 pub use task_item::TaskItem;
 pub use task_editor::TaskEditor;
@@ -17,3 +18,4 @@ pub use reward_icon::RewardIconComponent;
 pub use popup::Popup;
 pub use header::Header;
 pub use badge_field_header::badge_field_header;
+pub use icon_chooser::IconChooser;

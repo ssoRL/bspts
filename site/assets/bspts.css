@@ -1,8 +1,16 @@
 :root {
     --dark-color: rgb(20,20,20);
-    --medium-dark--color: darkslategray;
-    --light-color: lightgray;
-    --action-button-color: tomato;
+    --medium-dark--color: DarkSlateGray;
+    --light-color: LightGray;
+    --action-button-color: Tomato;
+    --dark-green: Green;
+    --light-green: PaleGreen;
+    --dark-red: DarkRed;
+    --light-red: LightSalmon;
+    --dark-blue: DarkBlue;
+    --light-blue: PaleTurquoise;
+    --dark-yellow: GoldenRod;
+    --light-yellow: LemonChiffon;
 
     --header-size: 50px;
     --sub-header-size: 40px;
@@ -238,4 +246,29 @@ h1 {
 
 .form .delete:hover {
     color: darkred;
+}
+
+/* color themes */
+.r-theme {
+    border: 1px solid var(--dark-red);
+    color: var(--dark-red);
+    background-color: var(--light-red);
+}
+
+.g-theme {
+    border: 1px solid var(--dark-green);
+    color: var(--dark-green);
+    background-color: var(--light-green);
+}
+
+.b-theme {
+    border: 1px solid var(--dark-blue);
+    color: var(--dark-blue);
+    background-color: var(--light-blue);
+}
+
+.y-theme {
+    border: 1px solid var(--dark-yellow);
+    color: var(--dark-yellow);
+    background-color: var(--light-yellow);
 }

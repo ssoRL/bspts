@@ -5,6 +5,7 @@ mod apis;
 mod app;
 mod components;
 mod data;
+mod icon;
 
 use wasm_bindgen::prelude::*;
 use yew::prelude::*;

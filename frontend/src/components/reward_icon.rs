@@ -1,15 +1,7 @@
-use data::reward::Reward;
 use yew::prelude::*;
-use yew::format::{Json};
-use crate::components::{Popup, RewardEditor, EditResult};
-use yew::services::{
-    fetch::FetchTask,
-    console::ConsoleService,
-};
-use crate::data::*;
-use crate::apis::{do_reward, FetchResponse};
 
-use data::icon::{RewardCategory, RewardIcon};
+
+use data::icon::{RewardCategory, RewardIcon, BadgeIcon};
 
 pub struct RewardIconComponent {
     props: Props,
@@ -28,7 +20,7 @@ impl Component for RewardIconComponent {
         Self { props }
     }
 
-    fn update(&mut self, msg: Self::Message) -> ShouldRender {
+    fn update(&mut self, _: Self::Message) -> ShouldRender {
         true
     }
 
@@ -38,7 +30,7 @@ impl Component for RewardIconComponent {
     }
 
     fn view(&self) -> Html {
-        let icon_class = match self.props.icon.category {
+        let icon_class = match self.props.icon.get_category() {
             RewardCategory::Coffee => "fa-bone",
             _ => "fa-bong",
         };

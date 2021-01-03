@@ -21,3 +21,5 @@ instant = "0.1"
 data = { path = "../data" }
 chrono = "0.4"
 http = "0.2.1"
+strum = "0.20"
+strum_macros = "0.20"

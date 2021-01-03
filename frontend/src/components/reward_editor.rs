@@ -8,7 +8,8 @@ use crate::apis::{new_reward, update_reward, delete_reward, FetchResponse};
 use yew::services::fetch::{FetchTask};
 use yew::prelude::*;
 use crate::components::EditResult;
-use data::icon::RewardIcon;
+use data::icon::{RewardIcon, RewardCategory};
+use crate::components::IconChooser;
 
 pub struct RewardEditor {
     state: State,
@@ -26,14 +27,14 @@ pub struct Props {
 }
 
 /// THe mode the reward editor is in: create a new reward or edit and existing
-pub enum Mode {
+enum Mode {
     Create,
     /// Keeps track of the reward's id
     Edit(i32),
 }
 
-pub struct State {
-    pub mode: Mode,
+struct State {
+    mode: Mode,
     reward: NewReward,
 }
 
@@ -41,6 +42,7 @@ pub enum Msg {
     UpdateName(String),
     UpdatePoints(String),
     UpdateDescription(String),
+    UpdateIcon(RewardIcon),
     SaveReward,
     ReturnReward(Reward),
     DeleteReward,
@@ -102,6 +104,10 @@ impl Component for RewardEditor {
             }
             Msg::UpdateDescription(desc) => {
                 self.state.reward.description = desc;
+                false
+            }
+            Msg::UpdateIcon(icon) => {
+                self.state.reward.icon = icon;
                 false
             }
             Msg::SaveReward => {
@@ -223,6 +229,10 @@ impl Component for RewardEditor {
                     <input class="input" type="number" oninput={edit_bspts} value={self.state.reward.bspts} />
                     <span class="text">{" BS Pts."}</span>
                 </div>
+                <div><IconChooser<RewardIcon, RewardCategory>
+                    icon={None}
+                    on_change={self.link.callback(|_| {Msg::Noop})}
+                /></div>
                 <div><textarea
                     rows="10" cols="30"
                     class="description-input"
