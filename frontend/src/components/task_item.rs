@@ -145,6 +145,8 @@ impl Component for TaskItem {
         let click_done = self.link.callback(|_| {Msg::CompleteTask});
 
         let badge_class = format!("badge {} {}-theme", is_done_class, self.props.task.icon.get_color().to_string());
+        let edit_class = format!("edit button {}-theme", self.props.task.icon.get_color().to_string());
+        let done_class = format!("done button {}-theme-inv", self.props.task.icon.get_color().to_string());
 
         html! {
             <div
@@ -155,11 +157,11 @@ impl Component for TaskItem {
                 <div class="info">{pts_desc}</div>
                 <div class="sub-info">{do_by}</div>
                 // <i class="thumbnail fas fa-coffee"></i>
-                <IconComponent<TaskIcon, TaskCategory> icon={self.props.task.icon.clone()} classes="on-badge" />
+                <IconComponent<TaskIcon, TaskCategory> icon={self.props.task.icon.clone()} classes="on-task-badge" />
                 <div class="badge-line">
-                    <span class="edit button" onclick={click_edit}>{"Edit"}</span>
+                    <span class={edit_class} onclick={click_edit}>{"Edit"}</span>
                     <span class="flex-buffer"></span>
-                    <span class="done button" onclick={click_done}>{"Done"}</span>
+                    <span class={done_class} onclick={click_done}>{"Done"}</span>
                 </div>
                 {
                     if self.state.edit_popup {

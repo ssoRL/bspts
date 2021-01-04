@@ -87,8 +87,13 @@ h1 {
 }
 
 /* The styling of elements on the badge */
-i.on-badge {
+i.on-reward-badge {
     font-size: 90px;
+    margin: 5px;
+}
+
+i.on-task-badge {
+    font-size: 80px;
     margin: 5px;
 }
 
@@ -103,6 +108,10 @@ i.on-badge {
 
 .badge .sub-info {
     font-size: var(--sub-info-size);
+}
+
+.badge .button {
+    padding: 8px 18px;
 }
 
 /* Generic styles */
@@ -257,14 +266,8 @@ i.on-badge {
     color: var(--dark-red);
     background-color: var(--light-red);
 }
-
-.badge.r-theme .edit {
-    padding: 8px 18px;
+.r-theme-inv {
     border: 2px solid var(--dark-red);
-}
-
-.badge.r-theme .done {
-    padding: 10px 20px;
     background-color: var(--dark-red);
     color: var(--light-red);
 }
@@ -274,14 +277,8 @@ i.on-badge {
     color: var(--dark-green);
     background-color: var(--light-green);
 }
-
-.badge.g-theme .edit {
-    padding: 8px 18px;
+.g-theme-inv {
     border: 2px solid var(--dark-green);
-}
-
-.badge.g-theme .done {
-    padding: 10px 20px;
     background-color: var(--dark-green);
     color: var(--light-green);
 }
@@ -291,14 +288,8 @@ i.on-badge {
     color: var(--dark-blue);
     background-color: var(--light-blue);
 }
-
-.badge.b-theme .edit {
-    padding: 8px 18px;
+.b-theme-inv {
     border: 2px solid var(--dark-blue);
-}
-
-.badge.b-theme .done {
-    padding: 10px 20px;
     background-color: var(--dark-blue);
     color: var(--light-blue);
 }
@@ -308,14 +299,8 @@ i.on-badge {
     color: var(--dark-yellow);
     background-color: var(--light-yellow);
 }
-
-.badge.y-theme .edit {
-    padding: 8px 18px;
+.y-theme-inv {
     border: 2px solid var(--dark-yellow);
-}
-
-.badge.y-theme .done {
-    padding: 10px 20px;
     background-color: var(--dark-yellow);
     color: var(--light-yellow);
 }

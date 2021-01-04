@@ -120,6 +120,8 @@ impl Component for RewardItem {
         let click_done = self.link.callback(|_| {Msg::TakeReward});
 
         let badge_class = format!("badge {}-theme", self.props.reward.icon.get_color().to_string());
+        let edit_class = format!("edit button {}-theme", self.props.reward.icon.get_color().to_string());
+        let done_class = format!("done button {}-theme-inv", self.props.reward.icon.get_color().to_string());
 
         html! {
             <div
@@ -128,11 +130,11 @@ impl Component for RewardItem {
             >
                 <div class="name">{&reward.name}</div>
                 <div class="info">{pts_desc}</div>
-                <IconComponent<RewardIcon, RewardCategory> icon={self.props.reward.icon.clone()} classes="on-badge" />
+                <IconComponent<RewardIcon, RewardCategory> icon={self.props.reward.icon.clone()} classes="on-reward-badge" />
                 <div class="badge-line">
-                    <span class="edit button" onclick={click_edit}>{"Edit"}</span>
+                    <span class={edit_class} onclick={click_edit}>{"Edit"}</span>
                     <span class="flex-buffer"></span>
-                    <span class="done button" onclick={click_done}>{"Take"}</span>
+                    <span class={done_class} onclick={click_done}>{"Take"}</span>
                 </div>
                 {
                     if self.state.edit_popup {

@@ -3,13 +3,11 @@ use yew::services::console::ConsoleService;
 
 
 use data::icon::{BadgeIcon, Color};
-use std::rc::Rc;
 use std::str::FromStr;
 use std::string::ToString;
-use strum_macros::EnumString;
 use strum::IntoEnumIterator;
-use strum_macros::EnumIter;
 use crate::fontable::Fontable;
+use crate::components::IconComponent;
 
 pub struct IconChooser<BI, CAT> where
     CAT: Clone + Copy + FromStr + ToString + IntoEnumIterator + Eq + 'static,
@@ -108,7 +106,6 @@ impl<BI, CAT> Component for IconChooser<BI, CAT> where
                 _ => Msg::Noop
             }
         });
-        // let edit_color = |color: String| {self.link.callback(|_:()| {Msg::UpdateColor(color.clone()})};
 
         let category_options: Html = CAT::iter().map(|cat: CAT| {
             let cat_str = cat.to_string();
@@ -130,6 +127,7 @@ impl<BI, CAT> Component for IconChooser<BI, CAT> where
         };
 
         let color_selector: Html = Color::iter().map(|color: Color| {
+            let color_icon = BI::new_ptr(self.state.category, color);
             let is_selected = if color_matches(color) {"yes"} else {"no"};
             let selected_class = format!("color-selected {}", is_selected);
             let container_class = format!("color-chooser {}-theme", color.to_string());
@@ -138,7 +136,7 @@ impl<BI, CAT> Component for IconChooser<BI, CAT> where
             html!{
                 <span class={selected_class}>
                     <span class={container_class} onclick={choose_color}>
-                        <i class={font_class} />
+                        <IconComponent<BI, CAT> icon={self.props.icon} classes="on-chooser" />
                     </span>
                 </span>
             }
