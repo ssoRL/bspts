@@ -2,7 +2,6 @@ mod setup;
 
 use backend_lib::*;
 use actix_web::{self, test, http::Method};
-use actix_session::{CookieSession};
 use setup::*;
 
 #[actix_rt::test]

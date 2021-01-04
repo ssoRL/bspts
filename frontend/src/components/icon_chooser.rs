@@ -9,8 +9,7 @@ use std::string::ToString;
 use strum_macros::EnumString;
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
-use crate::icon;
-use crate::icon::Fontable;
+use crate::fontable::Fontable;
 
 pub struct IconChooser<BI, CAT> where
     CAT: Clone + Copy + FromStr + ToString + IntoEnumIterator + Eq + 'static,

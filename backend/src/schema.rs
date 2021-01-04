@@ -28,6 +28,7 @@ table! {
         time_unit -> Text,
         by_when -> Int4,
         user_id -> Int4,
+        icon -> Text,
     }
 }
 

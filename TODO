@@ -10,20 +10,13 @@ reformat use (just fmt in general??)
 
 FEATURES:
 set icons
-    Animal(cat, dog, crow, fish)
-    Exercise(bicycle, dumbbell, running)
-    Book(book...,)
-    Clean(broom, trash, recycle, dumpster)
-    Code(code, file-code, laptop-code, keyboard)
-    comms(comment-dots, reply-all, envelope, phone)
-    Music(music, drum, guitar)
-    Writing(i-cursor, pen, pencil)
-
+set tasks back into a todo state
 style done task items
 styling for no auth page
 make routing work on non-hashtag routes
 signing out I guess
 ---
+An actually useful homepage
 stop loading things over and over if they're already loaded in
 better loading indicator
 new task create should go thru the store, it's a bit sketchy atm

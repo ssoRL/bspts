@@ -48,6 +48,7 @@ pub struct QTask {
     pub time_unit: String,
     pub by_when: i32,
     pub user_id: i32,
+    pub icon: String,
 }
 
 #[derive(Insertable)]
@@ -61,6 +62,7 @@ pub struct InsertableTask<'a> {
     pub every: i32,
     pub time_unit: &'a str,
     pub by_when: i32,
+    pub icon: String,
 }
 
 #[derive(Identifiable, Queryable, Associations, AsChangeset, Deserialize, Serialize, Clone, Debug)]

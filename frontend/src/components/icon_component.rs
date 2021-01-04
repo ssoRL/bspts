@@ -1,20 +1,31 @@
 use yew::prelude::*;
-use crate::icon::Fontable;
-use data::icon::RewardIcon;
+use crate::fontable::Fontable;
+use data::icon::{BadgeIcon,RewardIcon};
 
-pub struct RewardIconComponent {
-    props: Props,
+pub struct IconComponent<BI, CAT> where
+    CAT: Clone,
+    BI: Clone + Fontable<CAT>,
+{
+    props: Props<BI, CAT>,
 }
 
 #[derive(Properties, Clone)]
-pub struct Props {
-    pub icon: RewardIcon,
+pub struct Props<BI, CAT> where
+    CAT: Clone,
+    BI: Clone + Fontable<CAT>,
+{
+    pub icon: BI,
     pub classes: String,
+    #[prop_or_default]
+    _marker: std::marker::PhantomData<CAT>,
 }
 
-impl Component for RewardIconComponent {
+impl<BI, CAT> Component for IconComponent<BI, CAT> where
+    CAT: Clone + 'static,
+    BI: Clone + Fontable<CAT> + 'static,
+{
     type Message = ();
-    type Properties = Props;
+    type Properties = Props<BI, CAT>;
 
     fn create(props: Self::Properties, _: ComponentLink<Self>) -> Self {
         Self { props }

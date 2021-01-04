@@ -79,6 +79,7 @@ fn query_task_to_task(qt: &QTask) -> Task {
         days_to_next_reset: get_days_to_next_reset(qt.next_reset),
         next_reset: qt.next_reset,
         frequency,
+        icon: qt.icon.clone().into(),
     }
 }
 
@@ -140,6 +141,7 @@ pub fn commit_new_task(new_task: NewTask, user: QUser, conn: PgPooledConnection)
         every,
         time_unit,
         by_when,
+        icon: new_task.icon.into(),
     };
     
     let committed_task: QTask = diesel::insert_into(tasks::table)

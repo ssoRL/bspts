@@ -4,7 +4,37 @@ use backend_lib::*;
 use actix_web::{self, test, http::Method};
 use data::user::*;
 use data::task::*;
+use data::icon::TaskIcon;
 use setup::*;
+
+async fn create_new_task(
+    pool: &PgPool,
+    ses: &actix_web::http::Cookie<'static>,
+    name: &str,
+    bspts: i32
+) -> Task {
+    println!("Creating task {}", name);
+    let mut app = make_service(|c| {c.service(route::task::commit_new);}, &pool).await;
+    let new_task = NewTask {
+        name: name.to_string(),
+        description: "".to_string(),
+        bspts,
+        frequency: TaskInterval::Days{every: 3},
+        icon: TaskIcon::default(),
+    };
+    let req = test::TestRequest::with_header("content-type", "text/plain")
+        .uri("/task")
+        .method(Method::POST)
+        .cookie(ses.clone())
+        .set_json(&new_task)
+        .to_request();
+    let resp = test::call_service(&mut app, req).await;
+    println!("{:#?}", resp);
+    // First ensure that the call returned OK
+    assert!(resp.status().is_success());
+    // Then deserialize the body and check that the returned name is the same name as was added
+    test::read_body_json(resp).await
+}
 
 #[actix_rt::test]
 async fn get_tasks() {
@@ -28,26 +58,27 @@ async fn add_task() {
     let user = make_user("add_task");
     let pool = get_connection_pool();
     let session_cookie = login(&user, &pool).await.expect("Failed to login");
-    let mut app = make_service(|c| {c.service(route::task::commit_new);}, &pool).await;
+    // let mut app = make_service(|c| {c.service(route::task::commit_new);}, &pool).await;
     let task_name = "TaskName".to_string();
-    let new_task = NewTask {
-        name: task_name.clone(),
-        description: "".to_string(),
-        bspts: 1,
-        frequency: TaskInterval::Days{every: 3},
-    };
-    let req = test::TestRequest::with_header("content-type", "text/plain")
-        .uri("/task")
-        .method(Method::POST)
-        .cookie(session_cookie)
-        .set_json(&new_task)
-        .to_request();
-    let resp = test::call_service(&mut app, req).await;
-    println!("{:#?}", resp);
-    // First ensure that the call returned OK
-    assert!(resp.status().is_success());
-    // Then deserialize the body and check that the returned name is the same name as was added
-    let body: Task = test::read_body_json(resp).await;
+    // let new_task = NewTask {
+    //     name: task_name.clone(),
+    //     description: "".to_string(),
+    //     bspts: 1,
+    //     frequency: TaskInterval::Days{every: 3},
+    // };
+    // let req = test::TestRequest::with_header("content-type", "text/plain")
+    //     .uri("/task")
+    //     .method(Method::POST)
+    //     .cookie(session_cookie)
+    //     .set_json(&new_task)
+    //     .to_request();
+    // let resp = test::call_service(&mut app, req).await;
+    // println!("{:#?}", resp);
+    // // First ensure that the call returned OK
+    // assert!(resp.status().is_success());
+    // // Then deserialize the body and check that the returned name is the same name as was added
+    // let body: Task = test::read_body_json(resp).await;
+    let body = create_new_task(&pool, &session_cookie, &task_name, 1).await;
     assert_eq!(body.name, task_name);
 }
 
@@ -64,32 +95,35 @@ async fn update_task() {
         &pool
     ).await;
     let task_name = "TaskName".to_string();
-    let mut task = NewTask {
-        name: task_name.clone(),
-        description: "".to_string(),
-        bspts: 1,
-        frequency: TaskInterval::Days{every: 3},
-    };
-    let set_req = test::TestRequest::with_header("content-type", "text/plain")
-        .uri("/task")
-        .method(Method::POST)
-        .cookie(session_cookie.clone())
-        .set_json(&task)
-        .to_request();
-    let set_resp = test::call_service(&mut app, set_req).await;
-    println!("{:#?}", set_resp);
-    // First ensure that the call returned OK
-    assert!(set_resp.status().is_success());
-    let saved_task: Task = test::read_body_json(set_resp).await;
+    // let mut task = NewTask {
+    //     name: task_name.clone(),
+    //     description: "".to_string(),
+    //     bspts: 1,
+    //     frequency: TaskInterval::Days{every: 3},
+    // };
+    // let set_req = test::TestRequest::with_header("content-type", "text/plain")
+    //     .uri("/task")
+    //     .method(Method::POST)
+    //     .cookie(session_cookie.clone())
+    //     .set_json(&task)
+    //     .to_request();
+    // let set_resp = test::call_service(&mut app, set_req).await;
+    // println!("{:#?}", set_resp);
+    // // First ensure that the call returned OK
+    // assert!(set_resp.status().is_success());
+    // let saved_task: Task = test::read_body_json(set_resp).await;
+    let saved_task = create_new_task(&pool, &session_cookie, &task_name, 1).await;
     // Now make a call to update the task
     // First change the number of points
+    let task_id = saved_task.id;
+    let mut new_task: NewTask = saved_task.into();
     let new_pts = 2;
-    task.bspts = new_pts;
+    new_task.bspts = new_pts;
     let put_req = test::TestRequest::with_header("content-type", "text/plain")
-        .uri(format!("/task/{}", saved_task.id).as_str())
+        .uri(format!("/task/{}", task_id).as_str())
         .method(Method::PUT)
         .cookie(session_cookie)
-        .set_json(&task)
+        .set_json(&new_task)
         .to_request();
     let put_resp = test::call_service(&mut app, put_req).await;
     println!("{:#?}", put_resp);
@@ -114,23 +148,24 @@ async fn delete_task() {
         },
         &pool
     ).await;
-    let task = NewTask {
-        name: "TaskName".to_string(),
-        description: "".to_string(),
-        bspts: 1,
-        frequency: TaskInterval::Days{every: 3},
-    };
-    let set_req = test::TestRequest::with_header("content-type", "text/plain")
-        .uri("/task")
-        .method(Method::POST)
-        .cookie(session_cookie.clone())
-        .set_json(&task)
-        .to_request();
-    let set_resp = test::call_service(&mut app, set_req).await;
-    println!("{:#?}", set_resp);
-    // First ensure that the call returned OK
-    assert!(set_resp.status().is_success());
-    let saved_task: Task = test::read_body_json(set_resp).await;
+    // let task = NewTask {
+    //     name: "TaskName".to_string(),
+    //     description: "".to_string(),
+    //     bspts: 1,
+    //     frequency: TaskInterval::Days{every: 3},
+    // };
+    // let set_req = test::TestRequest::with_header("content-type", "text/plain")
+    //     .uri("/task")
+    //     .method(Method::POST)
+    //     .cookie(session_cookie.clone())
+    //     .set_json(&task)
+    //     .to_request();
+    // let set_resp = test::call_service(&mut app, set_req).await;
+    // println!("{:#?}", set_resp);
+    // // First ensure that the call returned OK
+    // assert!(set_resp.status().is_success());
+    // let saved_task: Task = test::read_body_json(set_resp).await;
+    let saved_task = create_new_task(&pool, &session_cookie, "TaskName", 1).await;
     // Now make a call to delete the task
     let delete_req = test::TestRequest::with_header("content-type", "text/plain")
         .uri(format!("/task/{}", saved_task.id).as_str())
@@ -180,23 +215,24 @@ async fn complete_task() {
     ).await;
     let task_points = 1;
 
-    println!("Create the task");
-    let task = NewTask {
-        name: "TaskName".to_string(),
-        description: "".to_string(),
-        bspts: task_points,
-        frequency: TaskInterval::Days{every: 3},
-    };
-    let set_req = test::TestRequest::with_header("content-type", "text/plain")
-        .uri("/task")
-        .method(Method::POST)
-        .cookie(session_cookie.clone())
-        .set_json(&task)
-        .to_request();
-    let set_resp = test::call_service(&mut app, set_req).await;
-    println!("{:#?}", set_resp);
-    assert!(set_resp.status().is_success());
-    let saved_task: Task = test::read_body_json(set_resp).await;
+    // println!("Create the task");
+    // let task = NewTask {
+    //     name: "TaskName".to_string(),
+    //     description: "".to_string(),
+    //     bspts: task_points,
+    //     frequency: TaskInterval::Days{every: 3},
+    // };
+    // let set_req = test::TestRequest::with_header("content-type", "text/plain")
+    //     .uri("/task")
+    //     .method(Method::POST)
+    //     .cookie(session_cookie.clone())
+    //     .set_json(&task)
+    //     .to_request();
+    // let set_resp = test::call_service(&mut app, set_req).await;
+    // println!("{:#?}", set_resp);
+    // assert!(set_resp.status().is_success());
+    // let saved_task: Task = test::read_body_json(set_resp).await;
+    let saved_task = create_new_task(&pool, &session_cookie, "TaskName", 1).await;
     assert!(!saved_task.is_done, "The task should be marked as not-done for now");
 
     println!("Now make a call to mark the task complete");

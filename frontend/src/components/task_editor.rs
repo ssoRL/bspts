@@ -8,6 +8,7 @@ use crate::apis::{commit_new_task, update_task, delete_task, FetchResponse};
 use yew::services::fetch::{FetchTask};
 use yew::prelude::*;
 use crate::components::EditResult;
+use data::icon::TaskIcon;
 
 pub struct TaskEditor {
     state: State,
@@ -20,7 +21,7 @@ pub struct TaskEditor {
 #[derive(Properties, Clone)]
 pub struct Props {
     /// A task to edit, or none to create a new task
-    pub task_to_edit: Option<Box<Task>>,
+    pub task_to_edit: Option<Task>,
     pub on_done: Callback<EditResult<Task>>,
 }
 
@@ -63,17 +64,13 @@ impl Component for TaskEditor {
                     name: "".to_string(),
                     description: "".to_string(),
                     bspts: 0,
-                    frequency: TaskInterval::Days{every: 1}
+                    frequency: TaskInterval::Days{every: 1},
+                    icon: TaskIcon::default(),
                 }
             )}
             Some(task) => {(
                 Mode::Edit(task.id),
-                NewTask {
-                    name: task.name,
-                    description: task.description,
-                    bspts: task.bspts,
-                    frequency: task.frequency,
-                }
+                task.into(),
             )},
         };
         Self {

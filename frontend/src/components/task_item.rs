@@ -1,11 +1,12 @@
 use data::task::Task;
 use yew::prelude::*;
 use yew::format::{Json};
-use crate::components::{Popup, TaskEditor, EditResult};
+use crate::components::{Popup, TaskEditor, EditResult, IconComponent};
 use crate::apis::{complete_task, FetchResponse};
 use yew::services::fetch::{FetchTask};
 use yew::services::ConsoleService;
 use crate::data::*;
+use data::icon::*;
 
 pub struct TaskItem {
     state: State,
@@ -143,17 +144,18 @@ impl Component for TaskItem {
         let click_edit = self.link.callback(|_| {Msg::EditTask});
         let click_done = self.link.callback(|_| {Msg::CompleteTask});
 
+        let badge_class = format!("badge {} {}-theme", is_done_class, self.props.task.icon.get_color().to_string());
+
         html! {
             <div
-                class={format!("badge {}", is_done_class)}
-                // TODO: allow the user to complete tasks
-                //onclick={on_tick}
+                class={badge_class}
                 title={&task.description}
             >
                 <div class="name">{&task.name}</div>
                 <div class="info">{pts_desc}</div>
                 <div class="sub-info">{do_by}</div>
-                <i class="thumbnail fas fa-coffee"></i>
+                // <i class="thumbnail fas fa-coffee"></i>
+                <IconComponent<TaskIcon, TaskCategory> icon={self.props.task.icon.clone()} classes="on-badge" />
                 <div class="badge-line">
                     <span class="edit button" onclick={click_edit}>{"Edit"}</span>
                     <span class="flex-buffer"></span>
@@ -172,7 +174,7 @@ impl Component for TaskItem {
                         html! {
                             <Popup>
                                 <TaskEditor
-                                    task_to_edit={Some(self.props.task.clone())}
+                                    task_to_edit={Some((*self.props.task).clone())}
                                     on_done={on_done}
                                 />
                             </Popup>

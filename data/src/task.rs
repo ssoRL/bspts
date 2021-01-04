@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use chrono::{NaiveDate};
+use crate::icon::{TaskIcon};
 
 /// The fields that must be specified when creating a new task
 /// The rest will be set to default values
@@ -9,6 +10,7 @@ pub struct NewTask {
     pub description: String,
     pub bspts: i32,
     pub frequency: TaskInterval, 
+    pub icon: TaskIcon,
 }
 
 /// The interval at which this task should be completed
@@ -67,4 +69,17 @@ pub struct Task {
     pub days_to_next_reset: i64,
     pub next_reset: NaiveDate,
     pub frequency: TaskInterval,
+    pub icon: TaskIcon,
+}
+
+impl Into<NewTask> for Task {
+    fn into(self: Self) -> NewTask {
+        NewTask {
+            name: self.name.clone(),
+            description: self.description.clone(),
+            bspts: self.bspts,
+            frequency: self.frequency.clone(), 
+            icon: self.icon.clone(),
+        }
+    }
 }
