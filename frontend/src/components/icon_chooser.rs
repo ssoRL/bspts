@@ -1,12 +1,5 @@
-use yew::services::{
-    dialog::DialogService,
-    console::{ConsoleService},
-};
-use yew::format::{Json};
-use crate::apis::{commit_new_task, update_task, delete_task, FetchResponse};
-use yew::services::fetch::{FetchTask};
 use yew::prelude::*;
-use crate::components::EditResult;
+use yew::services::console::ConsoleService;
 
 
 use data::icon::{BadgeIcon, Color};
@@ -20,49 +13,58 @@ use crate::icon;
 use crate::icon::Fontable;
 
 pub struct IconChooser<BI, CAT> where
-    CAT: Clone + FromStr + ToString + IntoEnumIterator + 'static,
-    BI: BadgeIcon<CAT> + Default + Clone + Fontable + 'static,
+    CAT: Clone + Copy + FromStr + ToString + IntoEnumIterator + Eq + 'static,
+    BI: BadgeIcon<CAT> + Default + Clone + Fontable<CAT> + 'static,
 {
-    state: State<BI>,
-    props: Props<BI, CAT>,
+    state: State<CAT>,
+    props: Props<BI>,
     link: ComponentLink<Self>,
 }
 
 #[derive(Properties, Clone)]
-pub struct Props<BI, CAT> where
-    CAT: Clone,
-    BI: BadgeIcon<CAT> + Default + Clone,
+pub struct Props<BI> where
+    BI: Default + Clone,
 {
     pub icon: Option<BI>,
-    pub on_change: Callback<Box<dyn BadgeIcon<CAT>>>,
+    pub on_change: Callback<Box<BI>>,
 }
 
-struct State<BI> where
-    BI: Fontable,
+struct State<CAT> where
+    CAT: Clone,
 {
-    icon: Box<BI>
+    // icon: Box<BI>
+    category: CAT,
+    color_o: Option<Color>,
 }
 
 pub enum Msg {
     UpdateCategory(String),
-    UpdateColor(String),
+    UpdateColor(Color),
     Noop,
 }
 
 impl<BI, CAT> Component for IconChooser<BI, CAT> where
-    CAT: Clone + FromStr + ToString + IntoEnumIterator + 'static,
-    BI: BadgeIcon<CAT> + Default + Clone + Fontable + 'static,
+    CAT: Clone + Copy + FromStr + ToString + IntoEnumIterator + Eq + 'static,
+    BI: BadgeIcon<CAT> + Default + Clone + Fontable<CAT> + 'static,
 {
     type Message = Msg;
-    type Properties = Props<BI, CAT>;
+    type Properties = Props<BI>;
 
     fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
-        let icon: Box<BI> = match &props.icon {
-            None => Box::new(BI::default()),
-            Some(i) => Box::new(BI::clone(&*i)),
+        let (category, color_o) = match &props.icon {
+            Some(i) => {
+                (i.get_category(), Some(i.get_color()))
+            },
+            None => {
+                let default = BI::default();
+                (default.get_category(), None)
+            },
         };
         Self {
-            state : State{ icon },
+            state : State{
+                category,
+                color_o,
+            },
             props,
             link,
         }
@@ -74,27 +76,21 @@ impl<BI, CAT> Component for IconChooser<BI, CAT> where
                 match CAT::from_str(&cat_str) {
                     Ok(cat) => {
                         ConsoleService::log(&format!("Got cat {}", cat_str));
-                        self.state.icon.set_category(cat);
+                        self.state.category = cat;
+                        self.state.color_o = None;
                         true
                     }
                     _ => {
-                        ConsoleService::error(&format!("Could not parse {} as category", cat_str));
+                        ConsoleService::error(&format!("BSPTS Error: Could not parse {} as category", cat_str));
                         false
                     }
                 }
             }
-            Msg::UpdateColor(color_str) => {
-                match Color::from_str(&color_str) {
-                    Ok(color) => {
-                        ConsoleService::log(&format!("Got color {}", color_str));
-                        self.state.icon.set_color(color);
-                        true
-                    }
-                    _ => {
-                        ConsoleService::error(&format!("Could not parse {} as color", color_str));
-                        false
-                    }
-                }
+            Msg::UpdateColor(color) => {
+                self.state.color_o = Some(color);
+                let icon_ptr = BadgeIcon::<CAT>::new_ptr(self.state.category, color);
+                self.props.on_change.emit(icon_ptr);
+                true
             }
             Noop => false
         }
@@ -117,96 +113,41 @@ impl<BI, CAT> Component for IconChooser<BI, CAT> where
 
         let category_options: Html = CAT::iter().map(|cat: CAT| {
             let cat_str = cat.to_string();
-            html!{ <option value={&cat_str}>{&cat_str}</option> }
+            let is_selected = cat == self.state.category;
+            html!{ <option selected={is_selected} value={&cat_str}>{&cat_str}</option> }
         }).collect();
 
         let category_selector = html!{
             <select onchange={edit_category}>{category_options}</select>
         };
 
+        // Check if a given color is the current color
+        let color_matches = |color: Color| {
+            if let Some(self_color) = &self.state.color_o {
+                *self_color == color
+            } else {
+                false
+            }
+        };
+
         let color_selector: Html = Color::iter().map(|color: Color| {
-            let container_class = format!("{}-theme", color.to_string());
-            let font_class = format!("fa {}", self.state.icon.font_class());
+            let is_selected = if color_matches(color) {"yes"} else {"no"};
+            let selected_class = format!("color-selected {}", is_selected);
+            let container_class = format!("color-chooser {}-theme", color.to_string());
+            let font_class = format!("fa {}", BI::make_font_class(&self.state.category, &color));
+            let choose_color = self.link.callback(move |_| {Msg::UpdateColor(color)});
             html!{
-                <div class={container_class}>
-                    <i class={font_class} />
-                </div>
+                <span class={selected_class}>
+                    <span class={container_class} onclick={choose_color}>
+                        <i class={font_class} />
+                    </span>
+                </span>
             }
         }).collect();
         
         html!{<>
             {category_selector}
-            {color_selector}
+            <div>{color_selector}</div>
         </>}
-
-        // let edit_time_unit = self.link.callback(|input: ChangeData| {
-        //     match input {
-        //         ChangeData::Select(select) => Msg::UpdateFrequencyUnit(select.value()),
-        //         _ => panic!("can't get change data value")
-        //     }
-        // });
-        // let frequency_selector = html! {
-        //     <div>
-        //         <span class="text">{"Do every "}</span>
-        //         <input
-        //             class="input"
-        //             type="number"
-        //             oninput={edit_every}
-        //             value={self.state.task.frequency.every()}
-        //         />
-        //         <select onchange={edit_time_unit}>
-        //             <option selected={self.state.task.frequency.in_days()} value="d">{"Days"}</option>
-        //             <option selected={self.state.task.frequency.in_weeks()} value="w">{"Weeks"}</option>
-        //             <option selected={self.state.task.frequency.in_months()} value="m">{"Months"}</option>
-        //         </select>
-        //         {by_when_selector}
-        //     </div>
-        // };
-
-        // let delete_this_task = if let Mode::Create = self.state.mode {
-        //     // Don't allow destroying a task that doesn't exist
-        //     html! { <></> }
-        // } else {
-        //     let on_destroy = self.link.callback(|_| {Msg::DeleteTask});
-
-        //     html! { <div class="badge-line">
-        //         <span class="flex-buffer" />
-        //         <a class="delete" onclick={on_destroy}>{"Delete this task"}</a>
-        //     </div>}
-        // };
-
-        // html! {
-        //     <div class="form">
-        //         <div>
-        //             <input
-        //                 type="text"
-        //                 class="title-input"
-        //                 oninput={edit_name}
-        //                 maxlength="20"
-        //                 placeholder="Task Name"
-        //                 value={self.state.task.name.clone()}
-        //             />
-        //         </div>
-        //         <div>
-        //             <span class="text">{"Is worth "}</span>
-        //             <input class="input" type="number" oninput={edit_bspts} value={self.state.task.bspts} />
-        //             <span class="text">{" bs points"}</span>
-        //         </div>
-        //         {frequency_selector}
-        //         <div><textarea
-        //             rows="10" cols="30"
-        //             class="description-input"
-        //             oninput={edit_desc}
-        //             placeholder="Optionally describe the task"
-        //             value={self.state.task.description.clone()}
-        //         /></div>
-        //         <div class="button-line">
-        //             <span class="cancel button" onclick={on_cancel}>{"Cancel"}</span>
-        //             <span class="flex-buffer"></span>
-        //             <span class="save button" onclick={on_save}>{"Save"}</span>
-        //         </div>
-        //         {delete_this_task}
-        //     </div>
-        // }
     }
 }

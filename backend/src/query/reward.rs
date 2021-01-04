@@ -83,6 +83,7 @@ pub fn update_reward(reward_id: i32, new_reward: NewReward, conn: &PgPooledConne
     q_reward.name = new_reward.name;
     q_reward.description = new_reward.description;
     q_reward.bspts = new_reward.bspts;
+    q_reward.icon = new_reward.icon.into();
 
     let committed_reward = update_q_reward(&q_reward, conn)?;
 

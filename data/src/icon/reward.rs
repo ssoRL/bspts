@@ -1,7 +1,7 @@
 use crate::icon::*;
 use std::str::FromStr;
 
-#[derive(Display, EnumString, EnumIter, Deserialize, Serialize, Clone, Copy, Debug)]
+#[derive(Display, EnumString, EnumIter, Deserialize, Serialize, Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RewardCategory {
     Cookie,
     Coffee,
@@ -30,6 +30,10 @@ impl Default for RewardIcon {
 }
 
 impl BadgeIcon<RewardCategory> for RewardIcon {
+    fn new_ptr(category: RewardCategory, color: Color) -> Box<Self> {
+        Box::new(RewardIcon {category, color})
+    }
+
     fn get_color(&self) -> Color {
         self.color
     }
@@ -50,21 +54,6 @@ impl BadgeIcon<RewardCategory> for RewardIcon {
 impl Into<String> for RewardIcon {
     fn into(self: Self) -> String {
         let color = &self.color.to_string();
-        // let cat = match self.category {
-        //     RewardCategory::Bong => "BONG",
-        //     RewardCategory::Book => "BOOK",
-        //     RewardCategory::Cookie => "COOKIE",
-        //     RewardCategory::Coffee => "COFFEE",
-        //     RewardCategory::GamePad => "GAME",
-        //     RewardCategory::Dice => "DICE",
-        //     RewardCategory::Booze => "BOOZE",
-        //     RewardCategory::Television => "TV",
-        //     RewardCategory::Computer => "COMPUTER",
-        // };
-        // let cat = match serde_json::to_string(&self.category) {
-        //     Ok(s) => s,
-        //     _ => "".to_string(),
-        // };
         let cat = &self.category.to_string();
         format!("{}{}", color, cat)
     }
@@ -80,24 +69,6 @@ impl From<String> for RewardIcon {
             Ok(c) => c,
             _ => Color::Yellow,
         };
-        // match &*color_string {
-        //     "r" => Color::Red,
-        //     "g" => Color::Green,
-        //     "b" => Color::Blue,
-        //     // Defaults arbitrarily to yellow
-        //     _ => Color::Yellow,
-        // };
-        // let category = match &*category_string {
-        //     "BONG" => RewardCategory::Bong,
-        //     "BOOK" => RewardCategory::Book,
-        //     "COOKIE" => RewardCategory::Cookie,
-        //     "GAME" => RewardCategory::GamePad,
-        //     "BOOZE" => RewardCategory::Booze,
-        //     "TV" => RewardCategory::Television,
-        //     "COMPUTER" => RewardCategory::Computer,
-        //     "DICE" => RewardCategory::Dice,
-        //     _ => RewardCategory::Coffee,
-        // };
         let category = match RewardCategory::from_str(&category_string) {
             Ok(cat) => cat,
             _ => RewardCategory::Coffee,

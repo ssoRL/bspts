@@ -71,9 +71,6 @@ h1 {
     height: 210px;
     margin: 20px;
     transition: all 200ms;
-    background-color: palegreen;
-    border: 2px solid green;
-    color: green;
     text-decoration: none;
     display: flex;
     flex-direction: column;
@@ -90,9 +87,9 @@ h1 {
 }
 
 /* The styling of elements on the badge */
-.badge .thumbnail {
+i.on-badge {
     font-size: 90px;
-    color: green;
+    margin: 5px;
 }
 
 .badge .name {
@@ -106,17 +103,6 @@ h1 {
 
 .badge .sub-info {
     font-size: var(--sub-info-size);
-}
-
-.badge .edit {
-    padding: 8px 18px;
-    border: 2px solid green;
-}
-
-.badge .done {
-    padding: 10px 20px;
-    background-color: green;
-    color: white;
 }
 
 /* Generic styles */
@@ -248,27 +234,88 @@ h1 {
     color: darkred;
 }
 
+/* Styling for the color selectors */
+.color-selected {
+    margin: 0;
+    padding: 10px;
+    border: 2px solid rgba(0,0,0,0);
+}
+
+.color-selected.yes {
+    border-color: var(--action-button-color);
+}
+
+.color-chooser {
+    display: inline-block;
+    padding: 0;
+    margin: 0 0;
+}
+
 /* color themes */
 .r-theme {
-    border: 1px solid var(--dark-red);
+    border: 2px solid var(--dark-red);
     color: var(--dark-red);
     background-color: var(--light-red);
 }
 
+.badge.r-theme .edit {
+    padding: 8px 18px;
+    border: 2px solid var(--dark-red);
+}
+
+.badge.r-theme .done {
+    padding: 10px 20px;
+    background-color: var(--dark-red);
+    color: var(--light-red);
+}
+
 .g-theme {
-    border: 1px solid var(--dark-green);
+    border: 2px solid var(--dark-green);
     color: var(--dark-green);
     background-color: var(--light-green);
 }
 
+.badge.g-theme .edit {
+    padding: 8px 18px;
+    border: 2px solid var(--dark-green);
+}
+
+.badge.g-theme .done {
+    padding: 10px 20px;
+    background-color: var(--dark-green);
+    color: var(--light-green);
+}
+
 .b-theme {
-    border: 1px solid var(--dark-blue);
+    border: 2px solid var(--dark-blue);
     color: var(--dark-blue);
     background-color: var(--light-blue);
 }
 
+.badge.b-theme .edit {
+    padding: 8px 18px;
+    border: 2px solid var(--dark-blue);
+}
+
+.badge.b-theme .done {
+    padding: 10px 20px;
+    background-color: var(--dark-blue);
+    color: var(--light-blue);
+}
+
 .y-theme {
-    border: 1px solid var(--dark-yellow);
+    border: 2px solid var(--dark-yellow);
     color: var(--dark-yellow);
     background-color: var(--light-yellow);
+}
+
+.badge.y-theme .edit {
+    padding: 8px 18px;
+    border: 2px solid var(--dark-yellow);
+}
+
+.badge.y-theme .done {
+    padding: 10px 20px;
+    background-color: var(--dark-yellow);
+    color: var(--light-yellow);
 }

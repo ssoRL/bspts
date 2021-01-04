@@ -48,7 +48,6 @@ pub enum Msg {
     DeleteReward,
     RewardDeleted,
     CancelEdit,
-    Noop,
 }
 
 impl Component for RewardEditor {
@@ -177,9 +176,6 @@ impl Component for RewardEditor {
                 self.props.on_done.emit(EditResult::Cancel);
                 true
             }
-            Msg::Noop => {
-                false
-            }
         }
     }
 
@@ -231,7 +227,7 @@ impl Component for RewardEditor {
                 </div>
                 <div><IconChooser<RewardIcon, RewardCategory>
                     icon={None}
-                    on_change={self.link.callback(|_| {Msg::Noop})}
+                    on_change={self.link.callback(|icon: Box<RewardIcon>| {Msg::UpdateIcon(*icon)})}
                 /></div>
                 <div><textarea
                     rows="10" cols="30"

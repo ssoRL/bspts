@@ -1,4 +1,5 @@
 use data::reward::Reward;
+use data::icon::BadgeIcon;
 use yew::prelude::*;
 use yew::format::{Json};
 use crate::components::{Popup, RewardEditor, EditResult, RewardIconComponent};
@@ -103,7 +104,7 @@ impl Component for RewardItem {
             // Return loading indicator
             return html!{
                 <div
-                    class={"badge reward-item loading"}
+                    class={"badge loading"}
                 />
             }
         }
@@ -118,16 +119,16 @@ impl Component for RewardItem {
         let click_edit = self.link.callback(|_| {Msg::EditReward});
         let click_done = self.link.callback(|_| {Msg::TakeReward});
 
+        let badge_class = format!("badge {}-theme", self.props.reward.icon.get_color().to_string());
+
         html! {
             <div
-                class={"badge reward-item {}"}
-                // TODO: allow the user to complete rewards
-                //onclick={on_tick}
+                class={badge_class}
                 title={&reward.description}
             >
                 <div class="name">{&reward.name}</div>
                 <div class="info">{pts_desc}</div>
-                <RewardIconComponent icon={self.props.reward.icon.clone()} />
+                <RewardIconComponent icon={self.props.reward.icon.clone()} classes="on-badge" />
                 <div class="badge-line">
                     <span class="edit button" onclick={click_edit}>{"Edit"}</span>
                     <span class="flex-buffer"></span>

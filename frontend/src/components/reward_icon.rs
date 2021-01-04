@@ -1,7 +1,6 @@
 use yew::prelude::*;
-
-
-use data::icon::{RewardCategory, RewardIcon, BadgeIcon};
+use crate::icon::Fontable;
+use data::icon::RewardIcon;
 
 pub struct RewardIconComponent {
     props: Props,
@@ -10,6 +9,7 @@ pub struct RewardIconComponent {
 #[derive(Properties, Clone)]
 pub struct Props {
     pub icon: RewardIcon,
+    pub classes: String,
 }
 
 impl Component for RewardIconComponent {
@@ -30,12 +30,7 @@ impl Component for RewardIconComponent {
     }
 
     fn view(&self) -> Html {
-        let icon_class = match self.props.icon.get_category() {
-            RewardCategory::Coffee => "fa-bone",
-            _ => "fa-bong",
-        };
-
-        let classes = format!("thumbnail fas {}", icon_class);
+        let classes = format!("{} fas {}", self.props.classes, self.props.icon.font_class());
 
         html! { <i class={classes} /> }
     }
