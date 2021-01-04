@@ -11,7 +11,7 @@ use crate::components::IconComponent;
 
 pub struct IconChooser<BI, CAT> where
     CAT: Clone + Copy + FromStr + ToString + IntoEnumIterator + Eq + 'static,
-    BI: BadgeIcon<CAT> + Default + Clone + Fontable<CAT> + 'static,
+    BI: BadgeIcon<CAT> + Default + Clone + Fontable + 'static,
 {
     state: State<CAT>,
     props: Props<BI>,
@@ -42,7 +42,7 @@ pub enum Msg {
 
 impl<BI, CAT> Component for IconChooser<BI, CAT> where
     CAT: Clone + Copy + FromStr + ToString + IntoEnumIterator + Eq + 'static,
-    BI: BadgeIcon<CAT> + Default + Clone + Fontable<CAT> + 'static,
+    BI: BadgeIcon<CAT> + Default + Clone + Fontable + 'static,
 {
     type Message = Msg;
     type Properties = Props<BI>;
@@ -131,12 +131,12 @@ impl<BI, CAT> Component for IconChooser<BI, CAT> where
             let is_selected = if color_matches(color) {"yes"} else {"no"};
             let selected_class = format!("color-selected {}", is_selected);
             let container_class = format!("color-chooser {}-theme", color.to_string());
-            let font_class = format!("fa {}", BI::make_font_class(&self.state.category, &color));
+            // let font_class = format!("fa {}", BI::make_font_class(&self.state.category, &color));
             let choose_color = self.link.callback(move |_| {Msg::UpdateColor(color)});
             html!{
                 <span class={selected_class}>
                     <span class={container_class} onclick={choose_color}>
-                        <IconComponent<BI, CAT> icon={self.props.icon} classes="on-chooser" />
+                        <IconComponent<BI> icon={*color_icon} classes="on-chooser" />
                     </span>
                 </span>
             }

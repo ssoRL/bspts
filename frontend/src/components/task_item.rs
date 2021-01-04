@@ -157,7 +157,7 @@ impl Component for TaskItem {
                 <div class="info">{pts_desc}</div>
                 <div class="sub-info">{do_by}</div>
                 // <i class="thumbnail fas fa-coffee"></i>
-                <IconComponent<TaskIcon, TaskCategory> icon={self.props.task.icon.clone()} classes="on-task-badge" />
+                <IconComponent<TaskIcon> icon={self.props.task.icon.clone()} classes="on-task-badge" />
                 <div class="badge-line">
                     <span class={edit_class} onclick={click_edit}>{"Edit"}</span>
                     <span class="flex-buffer"></span>

@@ -130,7 +130,7 @@ impl Component for RewardItem {
             >
                 <div class="name">{&reward.name}</div>
                 <div class="info">{pts_desc}</div>
-                <IconComponent<RewardIcon, RewardCategory> icon={self.props.reward.icon.clone()} classes="on-reward-badge" />
+                <IconComponent<RewardIcon> icon={self.props.reward.icon.clone()} classes="on-reward-badge" />
                 <div class="badge-line">
                     <span class={edit_class} onclick={click_edit}>{"Edit"}</span>
                     <span class="flex-buffer"></span>
