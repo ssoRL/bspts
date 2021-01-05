@@ -226,7 +226,7 @@ impl Component for RewardEditor {
                     <span class="text">{" BS Pts."}</span>
                 </div>
                 <div><IconChooser<RewardIcon, RewardCategory>
-                    icon={None}
+                icon={Some(self.state.reward.icon.clone())}
                     on_change={self.link.callback(|icon: Box<RewardIcon>| {Msg::UpdateIcon(*icon)})}
                 /></div>
                 <div><textarea

@@ -7,8 +7,8 @@ use yew::format::{Json};
 use crate::apis::{commit_new_task, update_task, delete_task, FetchResponse};
 use yew::services::fetch::{FetchTask};
 use yew::prelude::*;
-use crate::components::EditResult;
-use data::icon::TaskIcon;
+use crate::components::{EditResult, IconChooser};
+use data::icon::{TaskIcon, TaskCategory};
 
 pub struct TaskEditor {
     state: State,
@@ -44,6 +44,7 @@ pub enum Msg {
     UpdateFrequencyUnit(String),
     UpdateFrequencyEvery(u32),
     UpdateFrequencyBy(u32),
+    UpdateIcon(TaskIcon),
     SaveTask,
     ReturnTask(Task),
     DeleteTask,
@@ -154,6 +155,12 @@ impl Component for TaskEditor {
                 self.state.task.frequency = new_freq;
                 false
             }
+            Msg::UpdateIcon(icon) => {
+                ConsoleService::log(&format!("icon: {:#?}", icon));
+                self.state.task.icon = icon;
+                ConsoleService::log(&format!("self.icon: {:#?}", &self.state.task.icon));
+                false
+            }
             Msg::SaveTask => {
                 match &self.state.mode {
                     Mode::Create => {
@@ -178,6 +185,7 @@ impl Component for TaskEditor {
                                 Msg::CancelEdit
                             }
                         });
+                        ConsoleService::log(&format!("save icon: {:#?}", &self.state.task.icon));
                         self.fetch_action = Some(update_task(*task_id, self.state.task.clone(), task_committed_callback));
                     }
                 };
@@ -360,6 +368,10 @@ impl Component for TaskEditor {
                     <span class="text">{" bs points"}</span>
                 </div>
                 {frequency_selector}
+                <div><IconChooser<TaskIcon, TaskCategory>
+                    icon={Some(self.state.task.icon.clone())}
+                    on_change={self.link.callback(|icon: Box<TaskIcon>| {Msg::UpdateIcon(*icon)})}
+                /></div>
                 <div><textarea
                     rows="10" cols="30"
                     class="description-input"

@@ -9,13 +9,12 @@ yew tests (Might have to do some original work here X_X)
 reformat use (just fmt in general??)
 
 FEATURES:
-set icons
 set tasks back into a todo state
 style done task items
-styling for no auth page
-make routing work on non-hashtag routes
-signing out I guess
 ---
+make routing work on non-hashtag routes
+styling for no auth page
+signing out I guess
 An actually useful homepage
 stop loading things over and over if they're already loaded in
 better loading indicator

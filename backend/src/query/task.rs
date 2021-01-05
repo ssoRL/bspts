@@ -184,6 +184,7 @@ pub fn update_task(task_id: i32, new_task: NewTask, conn: &PgPooledConnection) -
     q_task.every = every;
     q_task.time_unit = time_unit.to_string();
     q_task.by_when = by_when;
+    q_task.icon = new_task.icon.into();
 
     let committed_task = update_q_task(&q_task, conn)?;
 
