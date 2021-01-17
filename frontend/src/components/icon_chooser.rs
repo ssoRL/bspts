@@ -89,7 +89,7 @@ impl<BI, CAT> Component for IconChooser<BI, CAT> where
                 self.props.on_change.emit(icon_ptr);
                 true
             }
-            Noop => false
+            Msg::Noop => false
         }
     }
 

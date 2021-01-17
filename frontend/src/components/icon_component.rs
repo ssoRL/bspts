@@ -1,6 +1,5 @@
 use yew::prelude::*;
 use crate::fontable::Fontable;
-use data::icon::{BadgeIcon,RewardIcon};
 
 pub struct IconComponent<BI> where
     BI: Clone + Fontable,

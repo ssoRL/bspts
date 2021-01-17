@@ -1,9 +1,11 @@
 use anyhow::Error;
 use yew::callback::Callback;
 use yew::format::{Json, Nothing};
-use yew::services::{
-    storage::{StorageService, Area},
-    fetch::{FetchService, FetchTask, Request, Response},
+use yew::services::fetch::{
+    FetchService,
+    FetchTask,
+    Request,
+    Response
 };
 use data::{
     task::*,
@@ -16,8 +18,6 @@ use yew_router::agent::RouteRequest::ChangeRoute;
 
 pub type FetchResponse<T> = Response<Json<Result<T, Error>>>;
 type FetchCallback<T> = Callback<FetchResponse<T>>;
-
-const UNAME_KEY: &str = "user-name";
 
 /// Gets the user state
 pub fn get_user(callback: FetchCallback<Option<User>>) -> FetchTask {
