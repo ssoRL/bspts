@@ -2,9 +2,10 @@ use yew::prelude::*;
 use yew::services::fetch::{FetchTask};
 use data::user::*;
 use yew::format::{Json};
-use crate::apis::{store_user, sign_in, FetchResponse};
+use crate::apis::{sign_in, FetchResponse};
 use yew::services::ConsoleService;
 use http::status::StatusCode;
+use crate::data::*;
 
 struct State {
     user: NewUser,
@@ -12,8 +13,14 @@ struct State {
     error_message: Option<String>,
 }
 
+#[derive(Properties, Clone)]
+pub struct Props {
+    pub store: Store,
+}
+
 pub struct SignIn {
     state: State,
+    props: Props,
     link: ComponentLink<Self>,
     fetch_tasks: Option<FetchTask>,
 }
@@ -28,9 +35,9 @@ pub enum Msg {
 
 impl Component for SignIn {
     type Message = Msg;
-    type Properties = ();
+    type Properties = Props;
 
-    fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
+    fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
         Self {
             state: State {
                 user: NewUser {
@@ -40,6 +47,7 @@ impl Component for SignIn {
                 saving: false,
                 error_message: None,
             },
+            props,
             link,
             fetch_tasks: None
         }
@@ -70,7 +78,7 @@ impl Component for SignIn {
                 true
             },
             Msg::SaveUser(user) => {
-                store_user(user);
+                self.props.store.act(StoreAction::StartSession(user));
                 true
             },
             Msg::TryAgain(error) => {
@@ -94,7 +102,6 @@ impl Component for SignIn {
     }
 
     fn view(&self) -> Html {
-        ConsoleService::log("Updating Sign In");
         let error_message = match &self.state.error_message {
             Some(msg) => {
                 html! {<span>{msg}</span>}

@@ -58,10 +58,13 @@ impl Component for RewardItem {
                             store.session_user.update(|user_opt| {
                                 match user_opt {
                                     Some(user) => {
-                                        user.bspts = pts;
-                                        Some(())
+                                        if user.bspts != pts {
+                                            user.bspts = pts;
+                                            return true;
+                                        }
+                                        return false
                                     }
-                                    None => None
+                                    None => false
                                 }
                             });
                         }

@@ -9,6 +9,7 @@ yew tests (Might have to do some original work here X_X)
 reformat use (just fmt in general??)
 
 FEATURES:
+backend test re-enable
 set tasks back into a todo state
 style done task items
 ---

@@ -73,15 +73,29 @@ impl Component for TaskItem {
                 ConsoleService::log(&format!("pts so far: {}", total_points));
                 self.props.store.session_user.update(|user_opt| {
                     if let Some(user) = user_opt {
-                            user.bspts = total_points;
-                            Some(())
+                        user.bspts = total_points;
+                        true
                     } else {
-                        None
+                        false
                     }
                 });
+                let task = self.props.task.clone();
+                let id = task.id;
                 self.fetch_action = None;
-                self.props.store.act(StoreAction::CompleteTask(self.props.task.id));
-                true
+                let remove_task = move |tasks: &mut TaskList| {
+                    tasks.remove(id).is_some()
+                };
+                if self.props.store.todo_tasks.update(remove_task) {
+                    self.props.store.done_tasks.update(move |tasks: &mut TaskList| {
+                        tasks.push(task);
+                        true
+                    });
+                    true
+                } else {
+                    let err_msg = format!("Could not find task {} to complete", id);
+                    ConsoleService::error(&err_msg);
+                    false
+                }
             }
             Msg::Update(task) => {
                 self.state.edit_popup = false;

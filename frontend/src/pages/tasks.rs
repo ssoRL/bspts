@@ -1,5 +1,5 @@
 use yew::prelude::*;
-use data::task::{Task};
+use data::task::{Task, SortedTasks};
 use crate::apis::{get_todo_tasks, get_done_tasks, sign_out_frontend, FetchResponse};
 use crate::components::*;
 use yew::format::{Json};
@@ -39,8 +39,9 @@ pub struct TasksPage {
 
 pub enum Msg {
     /// Do nothing
-    Noop,
-    FetchTasks(bool),
+    NoOp,
+    FetchTodoTasks,
+    FetchDoneTasks,
     ReceiveTasks{tasks: ItemPtr<TaskList>, are_done: bool},
     OpenTaskCreationComponent,
     NewTaskCommitted(Box<Task>),
@@ -56,7 +57,7 @@ impl Component for TasksPage {
         ConsoleService::info("Creating tasks");
 
         // Get the ball rolling on getting the tasks
-        link.send_message(Msg::FetchTasks(false));
+        link.send_message(Msg::FetchTodoTasks);
 
         Self {
             state: State {
@@ -74,16 +75,15 @@ impl Component for TasksPage {
 
     fn update(&mut self, message: Self::Message) -> ShouldRender {
         match message {
-            Msg::Noop => false,
-            // Fetch the tasks that the user has saved
-            Msg::FetchTasks(are_done) => {
-                ConsoleService::info("Getting tasks");
+            Msg::NoOp => false,
+            Msg::FetchTodoTasks => {
+                ConsoleService::info("Getting todo tasks");
                 let store_clone = self.props.store.clone();
                 let callback = self.link.callback(move |response: FetchResponse<Vec<Task>>| {
                     match response.into_parts() {
                         (_, Json(Ok(tasks))) => {
-                            store_clone.act(StoreAction::SetTasks{tasks, are_done});
-                            Msg::Noop
+                            store_clone.act(StoreAction::SetTasks{tasks: tasks, are_done: false});
+                            Msg::FetchDoneTasks
                         }
                         (parts, _) => {
                             Msg::HandleError{
@@ -93,17 +93,38 @@ impl Component for TasksPage {
                         }
                     }
                 });
-                let fetch_task = if are_done {
-                    ConsoleService::log("Fetching done tasks");
-                    get_done_tasks(callback)
-                } else {
-                    ConsoleService::log("Fetching todo tasks");
-                    get_todo_tasks(callback)
-                };
+                let fetch_task = get_todo_tasks(callback);
                 self.fetch_tasks = Some(fetch_task);
                 false
             }
-            // The message to handle the fetch of tasks coming back
+            Msg::FetchDoneTasks => {
+                ConsoleService::info("Getting done tasks");
+                let store_clone = self.props.store.clone();
+                let callback = self.link.callback(move |response: FetchResponse<SortedTasks>| {
+                    match response.into_parts() {
+                        (_, Json(Ok(tasks))) => {
+                            store_clone.act(StoreAction::SetTasks{
+                                tasks: tasks.done.clone(),
+                                are_done: true,
+                            });
+                            store_clone.todo_tasks.update(move |todo_tasks| {
+                                todo_tasks.push_vec(&tasks.todo);
+                                true
+                            });
+                            Msg::NoOp
+                        }
+                        (parts, _) => {
+                            Msg::HandleError{
+                                msg: "Failed to get tasks".to_string(),
+                                code: Some(parts.status),
+                            }
+                        }
+                    }
+                });
+                let fetch_task = get_done_tasks(callback);
+                self.fetch_tasks = Some(fetch_task);
+                false
+            }
             Msg::ReceiveTasks{tasks, are_done} => {
                 if are_done {
                     ConsoleService::log("recv done tasks");
@@ -111,8 +132,6 @@ impl Component for TasksPage {
                 } else {
                     ConsoleService::log("recv todo tasks");
                     self.state.todo_tasks = tasks.clone();
-                    // After getting the todo tasks, get the done tasks
-                    self.link.send_message(Msg::FetchTasks(true));
                 }
                 true
             }

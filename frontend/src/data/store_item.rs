@@ -63,19 +63,19 @@ where
     /// Call this to update the underlying item
     /// * run_update: The function that will update the item and return a some
     /// if an update occurred, or none in any other case.
-    pub fn update<F, R>(self: &Self, run_update: F) -> Option<R>
+    pub fn update<F>(self: &Self, run_update: F) -> bool
     where
-        F: Fn(&mut T) -> Option<R>
+        F: FnOnce(&mut T) -> bool
     {
         ConsoleService::log(format!("update refs: {}", Rc::strong_count(&self.item)).as_str());
         let item_was_updated = if let Ok(mut mut_item) = self.item.try_borrow_mut() {
             run_update(&mut mut_item)
         } else {
-            ConsoleService::error("Could not borrow ite to update");
-            None
+            ConsoleService::error("Could not borrow item to update");
+            false
         };
 
-        if item_was_updated.is_some() {
+        if item_was_updated {
             self.call_listeners();
         };
         item_was_updated

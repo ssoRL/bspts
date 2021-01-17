@@ -15,16 +15,16 @@ use crate::error::*;
 #[get("/task/todo")]
 async fn get_todo(data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
     with_auth(ses, data, |user, conn| {
-        let tasks = get_tasks(user, false, &conn);
+        let tasks = get_active_tasks(user, &conn);
         Ok(Json(tasks))
     })
 }
 
 #[get("/task/done")]
-async fn get_done(data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
+async fn get_done(data: Data<PgPool>, ses: Session) -> Rsp<SortedTasks> {
     with_auth(ses, data, |user, conn| {
-        let tasks = get_tasks(user, true, &conn);
-        Ok(Json(tasks))
+        let tasks_lists = get_inactive_tasks(user, &conn);
+        Ok(Json(tasks_lists))
     })
 }
 

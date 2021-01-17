@@ -102,7 +102,7 @@ impl Component for RewardsPage {
                 // The reward has been added on the backend, add it to the UI now
                 self.props.store.rewards.update(move |rewards| {
                     rewards.push_front(*reward.clone());
-                    Some(())
+                    true
                 });
                 self.state.edit_popup = false;
                 true

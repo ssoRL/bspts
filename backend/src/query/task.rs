@@ -83,18 +83,34 @@ fn query_task_to_task(qt: &QTask) -> Task {
     }
 }
 
-/// Get all of the tasks for the user
+fn reactivate_if_ready(done_tasks: Vec<QTask>, conn: &PgPooledConnection) -> (Vec<QTask>, Vec<QTask>) {
+    return (vec![], vec![]);
+}
+
+/// Get all of the tasks for the user that are not yet complete
 /// * user: The user to get the tasks for
-/// * done_tasks: true to get tasks that are already done, false to get tasks that are
-/// not yet completed
-pub fn get_tasks(user: QUser, done_tasks: bool, conn: &PgPooledConnection) -> Vec<Task> {
+pub fn get_active_tasks(user: QUser, conn: &PgPooledConnection) -> Vec<Task> {
     use crate::schema::tasks::dsl::*;
 
     let q_tasks = QTask::belonging_to(&user)
-        .filter(is_done.eq(done_tasks))
-        .load::<QTask>(conn)
-        .expect("Error loading tasks");
+        .filter(is_done.eq(false)).load(conn)
+        .expect("Error loading active tasks");
     q_tasks.iter().map(query_task_to_task).collect()
+}
+
+/// Get all of the tasks for the user that are completed
+/// * user: The user to get the tasks for
+pub fn get_inactive_tasks(user: QUser, conn: &PgPooledConnection) -> SortedTasks {
+    use crate::schema::tasks::dsl::*;
+
+    let q_tasks = QTask::belonging_to(&user)
+        .filter(is_done.eq(true)).load(conn)
+        .expect("Error loading inactive tasks");
+    let (inactive_q_tasks, newly_active_q_tasks) = reactivate_if_ready(q_tasks, conn);
+    SortedTasks {
+        todo: newly_active_q_tasks.iter().map(query_task_to_task).collect(),
+        done: inactive_q_tasks.iter().map(query_task_to_task).collect(),
+    }
 }
 
 fn get_q_task(task_id: i32, conn: &PgPooledConnection) -> Result<QTask> {

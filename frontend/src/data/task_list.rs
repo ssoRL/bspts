@@ -28,6 +28,13 @@ impl TaskList {
         }
     }
 
+    /// Add a new list of tasks to the front of the current list of tasks
+    pub fn push_vec(self: &mut Self, task_list: &Vec<Task>) {
+        for task in task_list {
+            self.push(Box::new(task.clone()));
+        }
+    }
+
     /// Removes the task with the specified id.
     /// Returns the removed task on success
     pub fn remove(self: &mut Self, task_id: i32) -> Option<BoxT> {

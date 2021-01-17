@@ -2,7 +2,8 @@ use yew::prelude::*;
 use yew::services::fetch::{FetchTask};
 use data::user::*;
 use yew::format::{Json};
-use crate::apis::{store_user, sign_up, FetchResponse};
+use crate::apis::{sign_up, FetchResponse};
+use crate::data::*;
 
 struct State {
     new_user: NewUser,
@@ -10,8 +11,14 @@ struct State {
     error_message: Option<String>,
 }
 
+#[derive(Properties, Clone)]
+pub struct Props {
+    pub store: Store,
+}
+
 pub struct SignUp {
     state: State,
+    props: Props,
     link: ComponentLink<Self>,
     fetch_tasks: Option<FetchTask>,
 }
@@ -26,9 +33,9 @@ pub enum Msg {
 
 impl Component for SignUp {
     type Message = Msg;
-    type Properties = ();
+    type Properties = Props;
 
-    fn create(_: Self::Properties, link: ComponentLink<Self>) -> Self {
+    fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
         Self {
             state: State {
                 new_user: NewUser {
@@ -38,6 +45,7 @@ impl Component for SignUp {
                 saving: false,
                 error_message: None,
             },
+            props,
             link,
             fetch_tasks: None
         }
@@ -59,7 +67,7 @@ impl Component for SignUp {
                 true
             },
             Msg::SaveUser(user) => {
-                store_user(user);
+                self.props.store.act(StoreAction::StartSession(user));
                 true
             },
             Msg::TryAgain(error) => {

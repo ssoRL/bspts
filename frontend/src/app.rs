@@ -88,7 +88,6 @@ impl Component for App {
                             Msg::DoNotRender
                         }
                     };
-                    ConsoleService::log("out of resp");
                     ret
                 });
                 self.fetch_task = Some(get_user(callback));
@@ -97,7 +96,7 @@ impl Component for App {
             Msg::ReceiveAuth(user) => {
                 ConsoleService::log("recv auth");
                 self.state.user = user;
-                false
+                true
             }
             Msg::DoRender => true,
             Msg::DoNotRender => false,
@@ -132,8 +131,8 @@ impl Component for App {
             } else {
                 match route {
                     // If not authenticated, can only visit the login or sign up page
-                    Route::SignInPage => html! {<SignIn/>},
-                    Route::SignUpPage => html! {<SignUp/>},
+                    Route::SignInPage => html! {<SignIn store={store.clone()}/>},
+                    Route::SignUpPage => html! {<SignUp store={store.clone()}/>},
                     // Otherwise directed to auth
                     _ => html! {<AuthOptions/>},
                 }
