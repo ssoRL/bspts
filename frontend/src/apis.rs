@@ -5,8 +5,9 @@ use yew::services::fetch::{
     FetchService,
     FetchTask,
     Request,
-    Response
+    Response,
 };
+use http::request::Builder;
 use data::{
     task::*,
     user::*,
@@ -15,9 +16,29 @@ use data::{
 use crate::app;
 use yew_router::prelude::*;
 use yew_router::agent::RouteRequest::ChangeRoute;
+use js_sys::Date;
 
 pub type FetchResponse<T> = Response<Json<Result<T, Error>>>;
 type FetchCallback<T> = Callback<FetchResponse<T>>;
+
+fn get_with_head(route: &str) -> Builder {
+    let get = Request::get(route);
+    add_headers(get)
+}
+
+fn post_with_head(route: &str) -> Builder {
+    let post = Request::post(route);
+    add_headers(post)
+}
+
+fn add_headers(request: Builder) -> Builder {
+    let today = Date::new_0();
+    request
+        .header("Content-Type", "application/json")
+        .header("year", today.get_full_year())
+        .header("month", today.get_month())
+        .header("day", today.get_date())
+}
 
 /// Gets the user state
 pub fn get_user(callback: FetchCallback<Option<User>>) -> FetchTask {
@@ -40,8 +61,7 @@ pub fn sign_out_frontend() {
 
 /// Sends the user's creds to the backend, which responds with an error, or a jwt
 pub fn sign_in(user: NewUser, callback: FetchCallback<User>) -> FetchTask  {
-    let login = Request::post("/login")
-        .header("Content-Type", "application/json")
+    let login = post_with_head("/login")
         .body(Json(&user))
         .expect("Failed to create ");
     FetchService::fetch(login, callback).expect("Failed to send POST request to /login")
@@ -49,16 +69,15 @@ pub fn sign_in(user: NewUser, callback: FetchCallback<User>) -> FetchTask  {
 
 /// Creates a new user account and returns the jwt used to auth the user
 pub fn sign_up(new_user: NewUser, callback: FetchCallback<User>) -> FetchTask  {
-    let post = Request::post("/user")
-        .header("Content-Type", "application/json")
+    let signup = post_with_head("/user")
         .body(Json(&new_user))
         .unwrap();
-    FetchService::fetch(post, callback).unwrap()
+    FetchService::fetch(signup, callback).unwrap()
 }
 
 /// Get a list of all of the tasks not yet completed
 pub fn get_todo_tasks(callback: FetchCallback<Vec<Task>>) -> FetchTask {
-    let get = Request::get("/task/todo")
+    let get = get_with_head("/task/todo")
         .body(Nothing)
         .unwrap();
     FetchService::fetch(get, callback).unwrap()
@@ -66,7 +85,7 @@ pub fn get_todo_tasks(callback: FetchCallback<Vec<Task>>) -> FetchTask {
 
 /// Get a list of all of the completed tasks
 pub fn get_done_tasks(callback: FetchCallback<SortedTasks>) -> FetchTask {
-    let get = Request::get("/task/done")
+    let get = get_with_head("/task/done")
         .body(Nothing)
         .unwrap();
     FetchService::fetch(get, callback).unwrap()
@@ -74,8 +93,7 @@ pub fn get_done_tasks(callback: FetchCallback<SortedTasks>) -> FetchTask {
 
 /// Commits to a new task
 pub fn commit_new_task(new_task: NewTask, callback: FetchCallback<Task>) -> FetchTask {
-        let post = Request::post("/task")
-            .header("Content-Type", "application/json")
+        let post = post_with_head("/task")
             .body(Json(&new_task))
             .unwrap();
         FetchService::fetch(post, callback).unwrap()
@@ -83,17 +101,17 @@ pub fn commit_new_task(new_task: NewTask, callback: FetchCallback<Task>) -> Fetc
 
 /// Update a task
 pub fn update_task(task_id: i32, task_edits: NewTask, callback: FetchCallback<Task>) -> FetchTask {
-        let post = Request::put(format!("/task/{}", task_id))
+        let put = Request::put(format!("/task/{}", task_id));
+        let update = add_headers(put)
             .header("Content-Type", "application/json")
             .body(Json(&task_edits))
             .unwrap();
-        FetchService::fetch(post, callback).unwrap()
+        FetchService::fetch(update, callback).unwrap()
 }
 
 /// Mark a task as completed
 pub fn complete_task(task_id: i32, callback: FetchCallback<i32>) -> FetchTask {
-        let post = Request::post(format!("/task/complete/{}", task_id))
-            .header("Content-Type", "application/json")
+        let post = post_with_head(&format!("/task/complete/{}", task_id))
             .body(Nothing)
             .unwrap();
         FetchService::fetch(post, callback).unwrap()
@@ -114,8 +132,7 @@ pub fn get_rewards(callback: FetchCallback<Vec<Reward>>) -> FetchTask {
 }
 
 pub fn new_reward(new_reward: &NewReward, callback: FetchCallback<Reward>) -> FetchTask {
-        let post = Request::post("/reward")
-            .header("Content-Type", "application/json")
+        let post = post_with_head("/reward")
             .body(Json(new_reward))
             .unwrap();
         FetchService::fetch(post, callback).unwrap()
@@ -123,15 +140,14 @@ pub fn new_reward(new_reward: &NewReward, callback: FetchCallback<Reward>) -> Fe
 
 /// You've done the reward. Probably well deserved!
 pub fn do_reward(reward_id: i32, callback: FetchCallback<i32>) -> FetchTask {
-        let post = Request::post(format!("/reward/do/{}", reward_id))
-            .header("Content-Type", "application/json")
+        let post = post_with_head(&format!("/reward/do/{}", reward_id))
             .body(Nothing)
             .unwrap();
         FetchService::fetch(post, callback).unwrap()
 }
 
 pub fn update_reward(reward_id: i32, reward_edits: NewReward, callback: FetchCallback<Reward>) -> FetchTask {
-        let post = Request::put(format!("/reward/{}", reward_id))
+        let post = Request::put(&format!("/reward/{}", reward_id))
             .header("Content-Type", "application/json")
             .body(Json(&reward_edits))
             .unwrap();
