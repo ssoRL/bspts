@@ -24,8 +24,6 @@ impl Component for Home {
 
     fn create(_props: Self::Properties, link: ComponentLink<Self>) -> Self {
         ConsoleService::info("Creating home");
-
-        ConsoleService::info("Creating self");
         Self {
             state: State {
                 error_message: None,

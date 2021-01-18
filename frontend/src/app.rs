@@ -76,13 +76,14 @@ impl Component for App {
     fn update(&mut self, msg: Self::Message) -> ShouldRender {
         match msg {
             Msg::RequestAuth => {
+                ConsoleService::log("request auth");
                 let store_clone = self.state.store.clone();
                 let callback = self.link.callback(move |response: FetchResponse<Option<User>>| {
                     let ret = match response.into_parts() {
                         (_, Json(Ok(Some(user)))) => {
                             ConsoleService::log("got user back to app");
                             store_clone.act(StoreAction::StartSession(user));
-                            Msg::DoRender
+                            Msg::DoNotRender
                         }
                         _ => {
                             Msg::DoNotRender
@@ -94,7 +95,7 @@ impl Component for App {
                 false
             }
             Msg::ReceiveAuth(user) => {
-                ConsoleService::log("recv auth");
+                ConsoleService::log("receive auth");
                 self.state.user = user;
                 true
             }

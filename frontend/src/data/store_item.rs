@@ -42,14 +42,16 @@ where
     /// Calls all of the listeners with a new value, if a listener has been dropped
     /// and can't upgrade, remove it from the list of listeners
     fn call_listeners(self: &Self) {
-        let filtered_listeners = if let Ok(listeners) = self.listeners.try_borrow() {
+        let mut dropped_listener: bool = false;
+        // Create a list of the listeners that haven't been dropped
+        let filtered_listeners: Vec<WeakStoreListener<T>> = if let Ok(listeners) = self.listeners.try_borrow() {
             ConsoleService::log(format!("Calling {} listeners", listeners.len()).as_str());
             listeners.iter().filter_map(|weak_listener| {
-                if let Some(listener) = weak_listener.upgrade() {
-                    listener.emit(Rc::clone(&self.item));
+                if weak_listener.upgrade().is_some() {
                     Some(Weak::clone(weak_listener))
                 } else {
-                    // if a listener has been destroyed, remove it from the list
+                    // if a listener has been destroyed, don't add it to the filtered list
+                    dropped_listener = true;
                     None
                 }
             }).collect()
@@ -57,7 +59,22 @@ where
             ConsoleService::error("Could not borrow listeners to call");
             panic!();
         };
-        self.listeners.replace(filtered_listeners);
+        // If any listeners were dropped, replace the old list with the updated one
+        if dropped_listener {
+            ConsoleService::log("Replacing listeners");
+            self.listeners.replace(filtered_listeners.clone());
+        };
+        // Now call those listeners, note that the borrow of the master list has been
+        // relinquished at this point so that the if any of the emits cause a new
+        // subscribe/update call, they will be able to borrow successfully
+        ConsoleService::log("Calling listeners");
+        for weak_listener in filtered_listeners {
+            match weak_listener.upgrade() {
+                Some(listener) => listener.emit(Rc::clone(&self.item)),
+                None => ConsoleService::error("A listener was dropped before it could be called"),
+            }
+        }
+        ConsoleService::log("Listeners called");
     }
 
     /// Call this to update the underlying item
@@ -96,18 +113,24 @@ where
     /// * call_now: true if the callback should be called immediately with
     /// the current value of the item
     pub fn subscribe(self: &Self, callback: Callback<ItemPtr<T>>, call_now: bool) -> StoreListener<T> {
+        ConsoleService::log("Subscribing");
         let store_listener: StoreListener<T> = Rc::new(callback);
         ConsoleService::log(format!("sub refs: {}", Rc::strong_count(&self.item)).as_str());
         if call_now {
             store_listener.emit(Rc::clone(&self.item));
         }
         let weak_listener: WeakStoreListener<T> = Rc::downgrade(&store_listener);
-        if let Ok(mut listeners) = self.listeners.try_borrow_mut() {
-            listeners.push(weak_listener);
-        } else {
-            ConsoleService::error("Could not borrow listeners to add callback");
-            panic!()
+        match self.listeners.try_borrow_mut() {
+            Ok(mut listeners) => {
+                listeners.push(weak_listener);
+            }
+            Err(e) => {
+                let msg = format!("Could not borrow listeners to add callback: {}", e);
+                ConsoleService::error(&msg);
+                panic!()
+            }
         };
+        ConsoleService::log("Subscribed");
         store_listener
     }
 }

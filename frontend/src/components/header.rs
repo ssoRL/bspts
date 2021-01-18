@@ -35,9 +35,7 @@ impl Component for Header {
     type Properties = Props;
 
     fn create(props: Self::Properties, link: ComponentLink<Self>) -> Self {
-        ConsoleService::info("Creating home");
-
-        ConsoleService::info("Creating self");
+        ConsoleService::info("Creating header");
         Self {
             state: State {
                 bspts: 0,
