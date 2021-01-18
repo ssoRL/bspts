@@ -83,7 +83,7 @@ fn query_task_to_task(qt: &QTask) -> Task {
 }
 
 fn reactivate_if_ready(done_tasks: Vec<QTask>, conn: &PgPooledConnection) -> (Vec<QTask>, Vec<QTask>) {
-    return (vec![], vec![]);
+    return (done_tasks, vec![]);
 }
 
 /// Get all of the tasks for the user that are not yet complete

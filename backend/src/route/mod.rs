@@ -38,17 +38,11 @@ pub fn get_date(req: HttpRequest) -> NaiveDate {
     let try_make_date = || -> Option<NaiveDate> {
         let headers = req.headers();
         let year_str = headers.get("year")?.to_str().ok()?;
-        println!("got ys: {}", year_str);
         let year = year_str.parse::<i32>().ok()?;
-        println!("got yi");
         let month_str = headers.get("month")?.to_str().ok()?;
-        println!("got ms: {}", month_str);
         let month = month_str.parse::<u32>().ok()?;
-        println!("got mu");
         let day_str = headers.get("day")?.to_str().ok()?;
-        println!("got ds: {}", day_str);
         let day = day_str.parse::<u32>().ok()?;
-        println!("got du");
         NaiveDate::from_ymd_opt(year, month, day)
     };
     match try_make_date() {

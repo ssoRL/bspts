@@ -23,6 +23,9 @@ async fn create_new_task(
         icon: TaskIcon::default(),
     };
     let req = test::TestRequest::with_header("content-type", "text/plain")
+        .header("year", "2021")
+        .header("month", "1")
+        .header("day", "1")
         .uri("/task")
         .method(Method::POST)
         .cookie(ses.clone())
@@ -275,14 +278,12 @@ async fn complete_task() {
     let get_tasks_done_resp = test::call_service(&mut app, get_done_tasks_req).await;
     println!("{:#?}", get_tasks_done_resp);
     assert!(get_tasks_done_resp.status().is_success());
-    let tasks: Vec<Task> = test::read_body_json(get_tasks_done_resp).await;
+    let tasks: SortedTasks = test::read_body_json(get_tasks_done_resp).await;
     let mut in_list: bool = false;
-    for task in tasks {
+    for task in tasks.done {
         if task.id == saved_task.id {
             in_list = true;
         }
     }
-    if !in_list {
-        panic!(format!("Can't find task with id: {}", saved_task.id))
-    }
+    assert!(in_list, format!("Can't find task with id: {}", saved_task.id));
 }
