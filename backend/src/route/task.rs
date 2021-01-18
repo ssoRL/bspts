@@ -3,7 +3,8 @@ use actix_web::{
     delete,
     post,
     put,
-    web::{self, Data, Json, ServiceConfig}
+    web::{self, Data, Json, ServiceConfig},
+    HttpRequest,
 };
 use data::task::*;
 use crate::query::task::*;
@@ -13,7 +14,7 @@ use crate::route::*;
 use crate::error::*;
 
 #[get("/task/todo")]
-async fn get_todo(data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
+async fn get_todo(req: HttpRequest, data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
     with_auth(ses, data, |user, conn| {
         let tasks = get_active_tasks(user, &conn);
         Ok(Json(tasks))
@@ -21,7 +22,7 @@ async fn get_todo(data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
 }
 
 #[get("/task/done")]
-async fn get_done(data: Data<PgPool>, ses: Session) -> Rsp<SortedTasks> {
+async fn get_done(req: HttpRequest, data: Data<PgPool>, ses: Session) -> Rsp<SortedTasks> {
     with_auth(ses, data, |user, conn| {
         let tasks_lists = get_inactive_tasks(user, &conn);
         Ok(Json(tasks_lists))
@@ -37,10 +38,11 @@ async fn get_by_id(web::Path(id): web::Path<i32>, data: Data<PgPool>, ses: Sessi
 }
 
 #[post("/task")]
-async fn commit_new(payload: Json<NewTask>, data: Data<PgPool>, ses: Session) -> Rsp<Task> {
+async fn commit_new(req: HttpRequest, payload: Json<NewTask>, data: Data<PgPool>, ses: Session) -> Rsp<Task> {
     with_auth(ses, data, |user, conn| {
         let Json(new_task) = payload;
-        let committed_task = commit_new_task(new_task, user, conn);
+        let today = get_date(req);
+        let committed_task = commit_new_task(new_task, user, conn, today);
         Ok(Json(committed_task))
     })
 }

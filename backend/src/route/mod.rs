@@ -2,7 +2,7 @@ pub mod task;
 pub mod user;
 pub mod reward;
 
-use actix_web::{error, http::StatusCode, web::Data};
+use actix_web::{error, http::StatusCode, web::Data, HttpRequest};
 use actix_session::{Session};
 use crate::{
     PgPool, PgPooledConnection,
@@ -10,6 +10,7 @@ use crate::{
     query::session::get_session_user,
     error::*,
 };
+use chrono::NaiveDate;
 
 const SESSION_ID_KEY: &str = "session_id";
 
@@ -29,5 +30,29 @@ where
             let error = error::InternalError::new("Could not get session", StatusCode::UNAUTHORIZED);
             Err(error.into())
         }
+    }
+}
+
+// Get the date sent in by the client
+pub fn get_date(req: HttpRequest) -> NaiveDate {
+    let try_make_date = || -> Option<NaiveDate> {
+        let headers = req.headers();
+        let year_str = headers.get("year")?.to_str().ok()?;
+        println!("got ys: {}", year_str);
+        let year = year_str.parse::<i32>().ok()?;
+        println!("got yi");
+        let month_str = headers.get("month")?.to_str().ok()?;
+        println!("got ms: {}", month_str);
+        let month = month_str.parse::<u32>().ok()?;
+        println!("got mu");
+        let day_str = headers.get("day")?.to_str().ok()?;
+        println!("got ds: {}", day_str);
+        let day = day_str.parse::<u32>().ok()?;
+        println!("got du");
+        NaiveDate::from_ymd_opt(year, month, day)
+    };
+    match try_make_date() {
+        Some(date) => date,
+        None => panic!("Could not get date from the headers"),
     }
 }

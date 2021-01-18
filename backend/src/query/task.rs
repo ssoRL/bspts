@@ -11,8 +11,7 @@ pub const WEEKS: &str = "Weeks";
 pub const MONTHS: &str = "Months";
 
 /// adds the frequency to the current date to get the next date this will trigger
-fn calc_next_reset(frequency: &TaskInterval) -> NaiveDate {
-    let today = Local::today().naive_local();
+fn calc_next_reset(frequency: &TaskInterval, today: NaiveDate) -> NaiveDate {
     match frequency {
         TaskInterval::Days{every} => {
             let duration = Duration::days(*every as i64);
@@ -133,10 +132,10 @@ pub fn get_task(task_id: i32, conn: &PgPooledConnection) -> Result<Task> {
 }
 
 /// Add a new task to the database
-pub fn commit_new_task(new_task: NewTask, user: QUser, conn: PgPooledConnection) -> Task {
+pub fn commit_new_task(new_task: NewTask, user: QUser, conn: PgPooledConnection, today: NaiveDate) -> Task {
     use crate::schema::tasks;
 
-    let next_reset = calc_next_reset(&new_task.frequency);
+    let next_reset = calc_next_reset(&new_task.frequency, today);
     let (time_unit, every, by_when) = match new_task.frequency {
         TaskInterval::Days{every} => {
             (DAYS, every as i32, 0)

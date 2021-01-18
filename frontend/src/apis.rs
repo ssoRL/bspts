@@ -36,7 +36,7 @@ fn add_headers(request: Builder) -> Builder {
     request
         .header("Content-Type", "application/json")
         .header("year", today.get_full_year())
-        .header("month", today.get_month())
+        .header("month", today.get_month() + 1)
         .header("day", today.get_date())
 }
 
