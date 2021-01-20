@@ -14,17 +14,26 @@ use crate::route::*;
 use crate::error::*;
 
 #[get("/task/todo")]
-async fn get_todo(req: HttpRequest, data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
+async fn get_todo(data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
     with_auth(ses, data, |user, conn| {
-        let tasks = get_active_tasks(user, &conn);
+        let tasks = get_todo_tasks(user, &conn);
         Ok(Json(tasks))
     })
 }
 
 #[get("/task/done")]
-async fn get_done(req: HttpRequest, data: Data<PgPool>, ses: Session) -> Rsp<SortedTasks> {
+async fn get_done(data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
     with_auth(ses, data, |user, conn| {
-        let tasks_lists = get_inactive_tasks(user, &conn);
+        let tasks_lists = get_done_tasks(user, &conn);
+        Ok(Json(tasks_lists))
+    })
+}
+
+#[post("/task/undo")]
+async fn undo_done_tasks(req: HttpRequest, data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
+    with_auth(ses, data, |user, conn| {
+        let today = get_date(req);
+        let tasks_lists = move_tasks_to_todo_if_ready(user, &conn, today);
         Ok(Json(tasks_lists))
     })
 }
@@ -89,6 +98,7 @@ async fn delete(
 pub fn configure(config: &mut ServiceConfig) {
     config.service(get_todo);
     config.service(get_done);
+    config.service(undo_done_tasks);
     config.service(get_by_id);
     config.service(commit_new);
     config.service(update);

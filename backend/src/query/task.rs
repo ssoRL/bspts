@@ -52,8 +52,8 @@ fn get_days_to_next_reset(next_reset: NaiveDate) -> i64 {
     duration.num_days()
 }
 
-fn query_task_to_task(qt: &QTask) -> Task {
-    let frequency = match qt.time_unit.as_str() {
+fn get_frequency_from_q_task(qt: &QTask) -> TaskInterval {
+    match qt.time_unit.as_str() {
         DAYS => {
             TaskInterval::Days{every: qt.every as u32}
         },
@@ -66,8 +66,10 @@ fn query_task_to_task(qt: &QTask) -> Task {
         _ => {
             panic!(format!("Could not create a task interval for {}", qt.time_unit))
         }
-    };
+    }
+}
 
+fn query_task_to_task(qt: &QTask) -> Task {
     Task {
         id: qt.id,
         name: qt.name.clone(),
@@ -77,39 +79,51 @@ fn query_task_to_task(qt: &QTask) -> Task {
         is_done: qt.is_done,
         days_to_next_reset: get_days_to_next_reset(qt.next_reset),
         next_reset: qt.next_reset,
-        frequency,
+        frequency: get_frequency_from_q_task(qt),
         icon: qt.icon.clone().into(),
     }
 }
 
-fn reactivate_if_ready(done_tasks: Vec<QTask>, conn: &PgPooledConnection) -> (Vec<QTask>, Vec<QTask>) {
-    return (done_tasks, vec![]);
+fn get_q_tasks(user: QUser, done_tasks: bool, conn: &PgPooledConnection) -> Vec<QTask> {
+    use crate::schema::tasks::dsl::*;
+
+    QTask::belonging_to(&user)
+        .filter(is_done.eq(done_tasks)).load(conn)
+        .expect("Error loading tasks")
 }
 
 /// Get all of the tasks for the user that are not yet complete
 /// * user: The user to get the tasks for
-pub fn get_active_tasks(user: QUser, conn: &PgPooledConnection) -> Vec<Task> {
-    use crate::schema::tasks::dsl::*;
-
-    let q_tasks = QTask::belonging_to(&user)
-        .filter(is_done.eq(false)).load(conn)
-        .expect("Error loading active tasks");
+pub fn get_todo_tasks(user: QUser, conn: &PgPooledConnection) -> Vec<Task> {
+    let q_tasks = get_q_tasks(user, false, conn);
     q_tasks.iter().map(query_task_to_task).collect()
 }
 
 /// Get all of the tasks for the user that are completed
 /// * user: The user to get the tasks for
-pub fn get_inactive_tasks(user: QUser, conn: &PgPooledConnection) -> SortedTasks {
-    use crate::schema::tasks::dsl::*;
+pub fn get_done_tasks(user: QUser, conn: &PgPooledConnection) -> Vec<Task> {
+    let q_tasks = get_q_tasks(user, true, conn);
+    q_tasks.iter().map(query_task_to_task).collect()
+}
 
-    let q_tasks = QTask::belonging_to(&user)
-        .filter(is_done.eq(true)).load(conn)
-        .expect("Error loading inactive tasks");
-    let (inactive_q_tasks, newly_active_q_tasks) = reactivate_if_ready(q_tasks, conn);
-    SortedTasks {
-        todo: newly_active_q_tasks.iter().map(query_task_to_task).collect(),
-        done: inactive_q_tasks.iter().map(query_task_to_task).collect(),
-    }
+/// Checks all of the user's "done" tasks and moves them back to 
+/// "todo" if it's their time.
+pub fn move_tasks_to_todo_if_ready(user: QUser, conn: &PgPooledConnection, today: NaiveDate) -> Vec<Task>  {
+    let mut q_tasks = get_q_tasks(user, true, conn);
+    q_tasks.iter_mut().filter_map(|q_task| {
+        if q_task.next_reset <= today {
+            return None
+        };
+        let frequency = get_frequency_from_q_task(&q_task);
+        let new_reset = calc_next_reset(&frequency, today);
+        q_task.next_reset = new_reset;
+        q_task.is_done = false;
+        match update_q_task(q_task, conn) {
+            Ok(updated_q_task) => Some(query_task_to_task(&updated_q_task)),
+            _ => None,
+        }
+        
+    }).collect()
 }
 
 fn get_q_task(task_id: i32, conn: &PgPooledConnection) -> Result<QTask> {
