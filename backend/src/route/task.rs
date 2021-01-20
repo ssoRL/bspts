@@ -30,7 +30,7 @@ async fn get_done(data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
 }
 
 #[post("/task/undo")]
-async fn undo_done_tasks(req: HttpRequest, data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
+async fn undo(req: HttpRequest, data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
     with_auth(ses, data, |user, conn| {
         let today = get_date(req);
         let tasks_lists = move_tasks_to_todo_if_ready(user, &conn, today);
@@ -98,7 +98,7 @@ async fn delete(
 pub fn configure(config: &mut ServiceConfig) {
     config.service(get_todo);
     config.service(get_done);
-    config.service(undo_done_tasks);
+    config.service(undo);
     config.service(get_by_id);
     config.service(commit_new);
     config.service(update);

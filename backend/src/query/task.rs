@@ -111,7 +111,8 @@ pub fn get_done_tasks(user: QUser, conn: &PgPooledConnection) -> Vec<Task> {
 pub fn move_tasks_to_todo_if_ready(user: QUser, conn: &PgPooledConnection, today: NaiveDate) -> Vec<Task>  {
     let mut q_tasks = get_q_tasks(user, true, conn);
     q_tasks.iter_mut().filter_map(|q_task| {
-        if q_task.next_reset <= today {
+        println!("compare {} to {}", q_task.next_reset, today);
+        if q_task.next_reset > today {
             return None
         };
         let frequency = get_frequency_from_q_task(&q_task);

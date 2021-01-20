@@ -7,6 +7,10 @@ use data::task::*;
 use data::icon::TaskIcon;
 use setup::*;
 
+const STANDARD_TASK_FREQUENCY: u32 = 3;
+
+/* HELPER FUNCTIONS */
+
 async fn create_new_task(
     pool: &PgPool,
     ses: &actix_web::http::Cookie<'static>,
@@ -19,7 +23,7 @@ async fn create_new_task(
         name: name.to_string(),
         description: "".to_string(),
         bspts,
-        frequency: TaskInterval::Days{every: 3},
+        frequency: TaskInterval::Days{every: STANDARD_TASK_FREQUENCY},
         icon: TaskIcon::default(),
     };
     let req = test::TestRequest::with_header("content-type", "text/plain")
@@ -33,9 +37,7 @@ async fn create_new_task(
         .to_request();
     let resp = test::call_service(&mut app, req).await;
     println!("{:#?}", resp);
-    // First ensure that the call returned OK
     assert!(resp.status().is_success());
-    // Then deserialize the body and check that the returned name is the same name as was added
     test::read_body_json(resp).await
 }
 
@@ -70,6 +72,34 @@ async fn complete_task(
     assert!(task.is_done);
     task
 }
+
+async fn undo_complete_task(
+    pool: &PgPool,
+    ses: &actix_web::http::Cookie<'static>,
+    task: &Task,
+    days_in_future: u32,
+) -> Vec<Task> {
+    println!("Completing task {}", task.id);
+    let mut app = make_service(|c| {
+        c.service(route::task::undo);
+        c.service(route::task::get_by_id);
+    }, &pool).await;
+    let undo_req = test::TestRequest::with_header("content-type", "text/plain")
+        .header("year", "2021")
+        .header("month", "1")
+        .header("day", (1 + days_in_future).to_string())
+        .uri("/task/undo")
+        .method(Method::POST)
+        .cookie(ses.clone())
+        .set_json(&task)
+        .to_request();
+    let undo_resp = test::call_service(&mut app, undo_req).await;
+    println!("{:#?}", undo_resp);
+    assert!(undo_resp.status().is_success(), "Bad return value");
+    test::read_body_json(undo_resp).await
+}
+
+/* TESTS START HERE */
 
 #[actix_rt::test]
 async fn get_tasks() {
@@ -239,7 +269,6 @@ async fn undo_task() {
     let session_cookie = login(&user, &pool).await.expect("Failed to login");
     let mut app = make_service(
         |c| {
-            c.service(route::task::undo_done_tasks);
             c.service(route::task::get_by_id);
         },
         &pool
@@ -250,22 +279,24 @@ async fn undo_task() {
 
     let completed_task = complete_task(&pool, &session_cookie, &saved_task).await;
 
-    println!("Now run undo with a time 1 day in the future");
-    let undo_req = test::TestRequest::with_header("content-type", "text/plain")
-        .header("year", "2021")
-        .header("month", "1")
-        .header("day", "2")
-        .uri("/task/undo")
-        .method(Method::POST)
-        .cookie(session_cookie.clone())
-        .set_json(&completed_task)
-        .to_request();
-    let undo_resp = test::call_service(&mut app, undo_req).await;
-    println!("{:#?}", undo_resp);
-    assert!(undo_resp.status().is_success(), "Bad return value");
-    let tasks: Vec<Task> = test::read_body_json(undo_resp).await;
+    println!("Now run undo with a time freq-1 day in the future, which should NOT trigger an undo");
+    let tasks_in_0_days: Vec<Task> = undo_complete_task(
+        &pool, &session_cookie, &saved_task, STANDARD_TASK_FREQUENCY - 1
+    ).await;
     let mut in_list: bool = false;
-    for task in tasks {
+    for task in tasks_in_0_days {
+        if task.id == saved_task.id {
+            in_list = true;
+        }
+    }
+    assert!(!in_list, format!("Task {} should not have been undone yet.", saved_task.id));
+
+    println!("Now run undo with a time freq days in the future, which SHOULD trigger an undo");
+    let tasks_in_0_days: Vec<Task> = undo_complete_task(
+        &pool, &session_cookie, &saved_task, STANDARD_TASK_FREQUENCY
+    ).await;
+    let mut in_list: bool = false;
+    for task in tasks_in_0_days {
         if task.id == saved_task.id {
             in_list = true;
             if task.is_done {
@@ -273,5 +304,5 @@ async fn undo_task() {
             }
         }
     }
-    assert!(in_list, format!("Can't find task with id: {}", saved_task.id));
+    assert!(in_list, format!("Task {} should have been undone.", saved_task.id));
 }
