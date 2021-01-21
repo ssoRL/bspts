@@ -175,7 +175,12 @@ impl Component for TaskItem {
                 <div class="badge-line">
                     <span class={edit_class} onclick={click_edit}>{"Edit"}</span>
                     <span class="flex-buffer"></span>
-                    <span class={done_class} onclick={click_done}>{"Done"}</span>
+                    {if self.props.task.is_done {
+                        html!{<></>}
+                    } else {
+                        html!{<span class={done_class} onclick={click_done}>{"Done"}</span>}
+                    }}
+                    
                 </div>
                 {
                     if self.state.edit_popup {

@@ -6,6 +6,7 @@ use data::user::*;
 use data::task::*;
 use data::icon::TaskIcon;
 use setup::*;
+use actix_web::http::StatusCode;
 
 const STANDARD_TASK_FREQUENCY: u32 = 3;
 
@@ -45,7 +46,7 @@ async fn complete_task(
     pool: &PgPool,
     ses: &actix_web::http::Cookie<'static>,
     task: &Task,
-) -> Task {
+) -> Result<Task, StatusCode> {
     println!("Completing task {}", task.id);
     let mut app = make_service(|c| {
         c.service(route::task::complete);
@@ -58,7 +59,9 @@ async fn complete_task(
         .to_request();
     let complete_resp = test::call_service(&mut app, complete_req).await;
     println!("{:#?}", complete_resp);
-    assert!(complete_resp.status().is_success());
+    if !complete_resp.status().is_success() {
+        return Err(complete_resp.status());
+    }
     println!("Get the task and ensure it's now marked completed");
     let get_req = test::TestRequest::with_header("content-type", "text/plain")
         .uri(format!("/task/{}", task.id).as_str())
@@ -67,10 +70,11 @@ async fn complete_task(
         .to_request();
     let get_resp = test::call_service(&mut app, get_req).await;
     println!("{:#?}", get_resp);
-    assert!(get_resp.status().is_success());
+    if !get_resp.status().is_success() {
+        return Err(get_resp.status());
+    }
     let task: Task = test::read_body_json(get_resp).await;
-    assert!(task.is_done);
-    task
+    Ok(task)
 }
 
 async fn undo_complete_task(
@@ -229,7 +233,17 @@ async fn test_complete_task() {
     let saved_task = create_new_task(&pool, &session_cookie, "TaskName", 1).await;
     assert!(!saved_task.is_done, "The task should be marked as not-done for now");
 
-    complete_task(&pool, &session_cookie, &saved_task).await;
+    match complete_task(&pool, &session_cookie, &saved_task).await {
+        Ok(task) => assert!(task.is_done, "Task should be done"),
+        _ => panic!("Failed to complete task"),
+    }
+    //     "Could complete task",
+    // );
+
+    match complete_task(&pool, &session_cookie, &saved_task).await {
+        Err(code) if code == StatusCode::BAD_REQUEST => {}
+        _ => panic!("Should not be allowed to complete the same task twice")
+    }
 
     println!("Get the user and ensure they got their bs points");
     let get_user_req = test::TestRequest::with_header("content-type", "text/plain")
@@ -267,7 +281,7 @@ async fn undo_task() {
     let user = make_user("undo_task");
     let pool = get_connection_pool();
     let session_cookie = login(&user, &pool).await.expect("Failed to login");
-    let mut app = make_service(
+    let app = make_service(
         |c| {
             c.service(route::task::get_by_id);
         },
@@ -277,7 +291,10 @@ async fn undo_task() {
     let saved_task = create_new_task(&pool, &session_cookie, "TaskName", 1).await;
     assert!(!saved_task.is_done, "The task should be marked as not-done for now");
 
-    let completed_task = complete_task(&pool, &session_cookie, &saved_task).await;
+    assert!(
+        complete_task(&pool, &session_cookie, &saved_task).await.is_ok(),
+        "Could complete task",
+    );
 
     println!("Now run undo with a time freq-1 day in the future, which should NOT trigger an undo");
     let tasks_in_0_days: Vec<Task> = undo_complete_task(

@@ -234,6 +234,9 @@ pub fn delete_task(task_id: i32, conn: &PgPooledConnection) -> Result<()> {
 pub fn complete_task(task_id: i32, conn: &PgPooledConnection) -> Result<i32> {
     println!("Completing task {}", task_id);
     let mut q_task = get_q_task(task_id, conn)?;
+    if q_task.is_done {
+        return Err(bad_request(format!("Task {} was already completed", q_task.id)));
+    }
     atomically(conn, || {
         q_task.is_done = true;
         let updated_q_task = update_q_task(&q_task, conn)?;
