@@ -1,6 +1,6 @@
 use yew::prelude::*;
-use data::task::{Task, SortedTasks};
-use crate::apis::{get_todo_tasks, get_done_tasks, sign_out_frontend, FetchResponse};
+use data::task::{Task};
+use crate::apis::{get_todo_tasks, get_done_tasks, sign_out_frontend, undo_done_tasks, FetchResponse};
 use crate::components::*;
 use yew::format::{Json};
 use yew::services::{
@@ -41,6 +41,7 @@ pub enum Msg {
     /// Do nothing
     NoOp,
     FetchTodoTasks,
+    FetchResetableTasksFromDoneTasks,
     FetchDoneTasks,
     ReceiveTasks{tasks: ItemPtr<TaskList>, are_done: bool},
     OpenTaskCreationComponent,
@@ -83,7 +84,7 @@ impl Component for TasksPage {
                     match response.into_parts() {
                         (_, Json(Ok(tasks))) => {
                             store_clone.act(StoreAction::SetTasks{tasks: tasks, are_done: false});
-                            Msg::FetchDoneTasks
+                            Msg::FetchResetableTasksFromDoneTasks
                         }
                         (parts, _) => {
                             Msg::HandleError{
@@ -97,19 +98,39 @@ impl Component for TasksPage {
                 self.fetch_tasks = Some(fetch_task);
                 false
             }
+            Msg::FetchResetableTasksFromDoneTasks => {
+                ConsoleService::info("Getting todo tasks");
+                let store_clone = self.props.store.clone();
+                let callback = self.link.callback(move |response: FetchResponse<Vec<Task>>| {
+                    match response.into_parts() {
+                        (_, Json(Ok(tasks))) => {
+                            store_clone.todo_tasks.update(move |todo_tasks| {
+                                todo_tasks.push_vec(&tasks);
+                                true
+                            });
+                            Msg::FetchDoneTasks
+                        }
+                        (parts, _) => {
+                            Msg::HandleError{
+                                msg: "Failed to get tasks".to_string(),
+                                code: Some(parts.status),
+                            }
+                        }
+                    }
+                });
+                let fetch_task = undo_done_tasks(callback);
+                self.fetch_tasks = Some(fetch_task);
+                false
+            }
             Msg::FetchDoneTasks => {
                 ConsoleService::info("Getting done tasks");
                 let store_clone = self.props.store.clone();
-                let callback = self.link.callback(move |response: FetchResponse<SortedTasks>| {
+                let callback = self.link.callback(move |response: FetchResponse<Vec<Task>>| {
                     match response.into_parts() {
                         (_, Json(Ok(tasks))) => {
                             store_clone.act(StoreAction::SetTasks{
-                                tasks: tasks.done.clone(),
+                                tasks,
                                 are_done: true,
-                            });
-                            store_clone.todo_tasks.update(move |todo_tasks| {
-                                todo_tasks.push_vec(&tasks.todo);
-                                true
                             });
                             Msg::NoOp
                         }

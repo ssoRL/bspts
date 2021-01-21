@@ -77,17 +77,19 @@ pub fn sign_up(new_user: NewUser, callback: FetchCallback<User>) -> FetchTask  {
 
 /// Get a list of all of the tasks not yet completed
 pub fn get_todo_tasks(callback: FetchCallback<Vec<Task>>) -> FetchTask {
-    let get = get_with_head("/task/todo")
-        .body(Nothing)
-        .unwrap();
+    let get = get_with_head("/task/todo").body(Nothing).unwrap();
     FetchService::fetch(get, callback).unwrap()
 }
 
 /// Get a list of all of the completed tasks
-pub fn get_done_tasks(callback: FetchCallback<SortedTasks>) -> FetchTask {
-    let get = get_with_head("/task/done")
-        .body(Nothing)
-        .unwrap();
+pub fn get_done_tasks(callback: FetchCallback<Vec<Task>>) -> FetchTask {
+    let get = get_with_head("/task/done").body(Nothing).unwrap();
+    FetchService::fetch(get, callback).unwrap()
+}
+
+/// Get a list of all of the completed tasks
+pub fn undo_done_tasks(callback: FetchCallback<Vec<Task>>) -> FetchTask {
+    let get = post_with_head("/task/undo").body(Nothing).unwrap();
     FetchService::fetch(get, callback).unwrap()
 }
 

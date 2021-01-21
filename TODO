@@ -9,8 +9,8 @@ yew tests (Might have to do some original work here X_X)
 reformat use (just fmt in general??)
 
 FEATURES:
-backend test re-enable
-set tasks back into a todo state
+prevent getting point from done tasks
+stop rewards from vanishing when you take them
 style done task items
 ---
 make routing work on non-hashtag routes

@@ -83,10 +83,3 @@ impl Into<NewTask> for Task {
         }
     }
 }
-
-/// contains a list of the inactive and active tasks of this user
-#[derive(Deserialize, Serialize, Clone, Debug)]
-pub struct SortedTasks {
-    pub todo: Vec<Task>,
-    pub done: Vec<Task>,
-}
