@@ -31,6 +31,11 @@ fn post_with_head(route: &str) -> Builder {
     add_headers(post)
 }
 
+fn put_with_head(route: &str) -> Builder {
+    let put = Request::put(route);
+    add_headers(put)
+}
+
 fn add_headers(request: Builder) -> Builder {
     let today = Date::new_0();
     request
@@ -103,9 +108,7 @@ pub fn commit_new_task(new_task: NewTask, callback: FetchCallback<Task>) -> Fetc
 
 /// Update a task
 pub fn update_task(task_id: i32, task_edits: NewTask, callback: FetchCallback<Task>) -> FetchTask {
-        let put = Request::put(format!("/task/{}", task_id));
-        let update = add_headers(put)
-            .header("Content-Type", "application/json")
+        let update = put_with_head(&format!("/task/{}", task_id))
             .body(Json(&task_edits))
             .unwrap();
         FetchService::fetch(update, callback).unwrap()
@@ -149,11 +152,10 @@ pub fn do_reward(reward_id: i32, callback: FetchCallback<i32>) -> FetchTask {
 }
 
 pub fn update_reward(reward_id: i32, reward_edits: NewReward, callback: FetchCallback<Reward>) -> FetchTask {
-        let post = Request::put(&format!("/reward/{}", reward_id))
-            .header("Content-Type", "application/json")
+        let update = put_with_head(&format!("/reward/{}", reward_id))
             .body(Json(&reward_edits))
             .unwrap();
-        FetchService::fetch(post, callback).unwrap()
+        FetchService::fetch(update, callback).unwrap()
 }
 
 pub fn delete_reward(reward_id: i32, callback: FetchCallback<()>) -> FetchTask {

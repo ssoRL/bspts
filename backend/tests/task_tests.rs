@@ -237,8 +237,6 @@ async fn test_complete_task() {
         Ok(task) => assert!(task.is_done, "Task should be done"),
         _ => panic!("Failed to complete task"),
     }
-    //     "Could complete task",
-    // );
 
     match complete_task(&pool, &session_cookie, &saved_task).await {
         Err(code) if code == StatusCode::BAD_REQUEST => {}
