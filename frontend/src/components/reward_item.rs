@@ -34,7 +34,7 @@ pub enum Msg {
     Update(Box<Reward>),
     CancelEdit,
     DestroySelf,
-    Noop,
+    FetchDone,
 }
 
 impl Component for RewardItem {
@@ -70,7 +70,7 @@ impl Component for RewardItem {
                         }
                         _ => ConsoleService::error("Could not mark task as done")
                     }
-                    Msg::Noop
+                    Msg::FetchDone
                 });
                 self.fetch_action = Some(do_reward(self.props.reward.id, callback));
                 false
@@ -93,7 +93,10 @@ impl Component for RewardItem {
                 self.props.store.act(StoreAction::DeleteReward(self.props.reward.id));
                 true
             }
-            Msg::Noop => false,
+            Msg::FetchDone => {
+                self.fetch_action = None;
+                true
+            },
         }
     }
 
@@ -103,15 +106,6 @@ impl Component for RewardItem {
     }
 
     fn view(&self) -> Html {
-        if let Some(_) = self.fetch_action {
-            // Return loading indicator
-            return html!{
-                <div
-                    class={"badge loading"}
-                />
-            }
-        }
-
         let reward = &self.props.reward;
 
         let pts_desc = match reward.bspts {
@@ -127,6 +121,7 @@ impl Component for RewardItem {
         let done_class = format!("done button {}-theme-inv", self.props.reward.icon.get_color().to_string());
 
         html! {
+            <div class="covered-on-load">
             <div
                 class={badge_class}
                 title={&reward.description}
@@ -161,6 +156,16 @@ impl Component for RewardItem {
                         html! {<></>}
                     }
                 }
+            </div>
+            {if let Some(_) = self.fetch_action {
+                html!{
+                    <div class={"loading-screen"}>
+                        <div class="loading-spinner fa fa-spinner" />
+                    </div>
+                }
+            } else {
+                html!{<></>}
+            }}
             </div>
         }
     }

@@ -6,12 +6,11 @@ documentation
 chron jobs to mark done
 send reminder emails
 yew tests (Might have to do some original work here X_X)
+yew store???
 reformat use (just fmt in general??)
 
 FEATURES:
-stop rewards from vanishing when you take them
 style done task items
----
 make routing work on non-hashtag routes
 lose an increasing number of points as tasks are missed
 styling for no auth page

@@ -132,6 +132,37 @@ i.on-chooser {
     font-variant: small-caps;
 }
 
+.covered-on-load {
+    position: relative;
+}
+
+.loading-screen {
+    --badge-size: 214px;
+    --icon-size: 100px;
+    --padding: calc((var(--badge-size) - var(--icon-size))/2);
+    font-size: var(--icon-size);
+    padding: var(--padding);
+    position: absolute;
+    background-color:rgba(50, 50, 50, .65);
+    color: var(--light-color);
+    top: 20px;
+    left: 20px;
+    max-height: var(--icon-size);
+}
+
+.loading-spinner {
+    animation-name: spin;
+    animation-duration: 1s;
+    animation-delay: 0s;
+    animation-iteration-count: infinite;
+    animation-timing-function: ease-in-out;
+}
+
+@keyframes spin {
+    from { rotate: 0deg }
+    to { rotate:360deg }
+}
+
 /* Styling for the top button component */
 .top.button {
     font-size: var(--sub-header-size);
