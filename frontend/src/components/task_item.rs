@@ -158,9 +158,9 @@ impl Component for TaskItem {
         let click_edit = self.link.callback(|_| {Msg::EditTask});
         let click_done = self.link.callback(|_| {Msg::CompleteTask});
 
-        let badge_class = format!("badge {} {}-theme", is_done_class, self.props.task.icon.get_color().to_string());
-        let edit_class = format!("edit button {}-theme", self.props.task.icon.get_color().to_string());
-        let done_class = format!("done button {}-theme-inv", self.props.task.icon.get_color().to_string());
+        let badge_class = format!("badge {} {}-theme", is_done_class, self.props.task.icon.get_color());
+        let edit_class = format!("edit button {}-theme", self.props.task.icon.get_color());
+        let done_class = format!("done button {}-theme-inv", self.props.task.icon.get_color());
 
         html! {
             <div

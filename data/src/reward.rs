@@ -20,3 +20,14 @@ pub struct Reward {
     pub bspts: i32,
     pub icon: RewardIcon,
 }
+
+impl Into<NewReward> for Reward {
+    fn into(self: Self) -> NewReward {
+        NewReward {
+            name: self.name.clone(),
+            description: self.description.clone(),
+            bspts: self.bspts,
+            icon: self.icon.clone(),
+        }
+    }
+}

@@ -10,7 +10,7 @@ pub enum RewardCategory {
     GamePad,
     Booze,
     Computer,
-    Bong,
+    NailPolish,
     Book,
 }
 

@@ -3,7 +3,6 @@ mod task;
 
 use std::convert::From;
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 use strum_macros::{Display, EnumString, EnumIter};
 
 pub use reward::{RewardIcon, RewardCategory};

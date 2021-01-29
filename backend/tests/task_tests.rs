@@ -279,12 +279,6 @@ async fn undo_task() {
     let user = make_user("undo_task");
     let pool = get_connection_pool();
     let session_cookie = login(&user, &pool).await.expect("Failed to login");
-    let app = make_service(
-        |c| {
-            c.service(route::task::get_by_id);
-        },
-        &pool
-    ).await;
     
     let saved_task = create_new_task(&pool, &session_cookie, "TaskName", 1).await;
     assert!(!saved_task.is_done, "The task should be marked as not-done for now");

@@ -147,7 +147,7 @@ impl Component for RewardItem {
                         html! {
                             <Popup>
                                 <RewardEditor
-                                    reward_to_edit={Some(self.props.reward.clone())}
+                                    reward_to_edit={Some(*self.props.reward.clone())}
                                     on_done={on_done}
                                 />
                             </Popup>

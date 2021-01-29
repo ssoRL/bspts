@@ -1,6 +1,7 @@
 use actix_web::Result;
 use diesel::connection::{TransactionManager, AnsiTransactionManager};
 use crate::PgPooledConnection;
+use crate::error::{bad_request, conflict};
 
 pub mod task;
 pub mod user;
@@ -14,12 +15,18 @@ pub fn atomically<T, F>(conn: &PgPooledConnection, updates: F) -> Result<T>
 {
     // Start up a new transaction manager so the updates are atomic
     let transaction_manager = AnsiTransactionManager::new();
-    transaction_manager.begin_transaction(conn);
+    if transaction_manager.begin_transaction(conn).is_err() {
+        return Err(bad_request("Could not begin atomic transaction".to_string()));
+    }
     let result = updates();
     if result.is_ok() {
-        transaction_manager.commit_transaction(conn);
+        if transaction_manager.commit_transaction(conn).is_err() {
+            return Err(conflict("Could not complete atomic transaction".to_string()));
+        }
     } else {
-        transaction_manager.rollback_transaction(conn);
+        if transaction_manager.rollback_transaction(conn).is_err() {
+            return Err(conflict("Could not rollback atomic transaction".to_string()));
+        }
     }
     // Always return the result, even if it's an error
     result

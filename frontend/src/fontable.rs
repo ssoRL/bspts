@@ -16,7 +16,7 @@ impl Fontable for RewardIcon {
                 RewardCategory::GamePad => "fa-gamepad",
                 RewardCategory::Booze => "fa-glass-cheers",
                 RewardCategory::Computer => "fa-laptop",
-                RewardCategory::Bong => "fa-bong",
+                RewardCategory::NailPolish => "fa-bong",
                 RewardCategory::Book => "fa-book-open",
             }
         };

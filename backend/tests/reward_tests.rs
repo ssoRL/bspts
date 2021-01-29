@@ -6,7 +6,7 @@ use data::{user::User, reward::*, icon::RewardIcon};
 use setup::*;
 
 #[actix_rt::test]
-async fn get_rewards() {
+pub async fn get_rewards() {
     // create a new user and log in
     let user = make_user("get_rewards");
     let pool = get_connection_pool();
@@ -23,7 +23,7 @@ async fn get_rewards() {
 }
 
 #[actix_rt::test]
-async fn add_reward() {
+pub async fn add_reward() {
     let user = make_user("add_reward");
     let pool = get_connection_pool();
     let session_cookie = login(&user, &pool).await.expect("Failed to login");

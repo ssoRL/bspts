@@ -22,7 +22,7 @@ pub struct RewardEditor {
 #[derive(Properties, Clone)]
 pub struct Props {
     /// A reward to edit, or none to create a new reward
-    pub reward_to_edit: Option<Box<Reward>>,
+    pub reward_to_edit: Option<Reward>,
     pub on_done: Callback<EditResult<Reward>>,
 }
 
@@ -67,12 +67,7 @@ impl Component for RewardEditor {
             )}
             Some(reward) => {(
                 Mode::Edit(reward.id),
-                NewReward {
-                    name: reward.name,
-                    description: reward.description,
-                    bspts: reward.bspts,
-                    icon: RewardIcon::default(),
-                }
+                reward.into(),
             )},
         };
         Self {

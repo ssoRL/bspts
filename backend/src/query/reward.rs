@@ -1,10 +1,8 @@
 use diesel::prelude::*;
 use data::reward::*;
-use chrono::{NaiveDate, Local, Duration, Datelike};
 use crate::PgPooledConnection;
 use crate::models::*;
 use crate::error::*;
-use crate::query::{atomically, user};
 
 
 fn q_reward_to_reward(q: &QReward) -> Reward {

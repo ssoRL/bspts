@@ -40,10 +40,9 @@ pub struct App {
 }
 
 pub enum Msg {
-    DoRender,
-    DoNotRender,
     RequestAuth,
     ReceiveAuth(ItemPtr<Option<User>>),
+    Noop,
 }
 
 impl Component for App {
@@ -83,10 +82,10 @@ impl Component for App {
                         (_, Json(Ok(Some(user)))) => {
                             ConsoleService::log("got user back to app");
                             store_clone.act(StoreAction::StartSession(user));
-                            Msg::DoNotRender
+                            Msg::Noop
                         }
                         _ => {
-                            Msg::DoNotRender
+                            Msg::Noop
                         }
                     };
                     ret
@@ -99,8 +98,7 @@ impl Component for App {
                 self.state.user = user;
                 true
             }
-            Msg::DoRender => true,
-            Msg::DoNotRender => false,
+            Msg::Noop => false,
         }
     }
 
