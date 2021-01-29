@@ -79,8 +79,9 @@ impl Component for TaskItem {
                         false
                     }
                 });
-                let task = self.props.task.clone();
+                let mut task = self.props.task.clone();
                 let id = task.id;
+                task.is_done = true;
                 self.fetch_action = None;
                 let remove_task = move |tasks: &mut TaskList| {
                     tasks.remove(id).is_some()
@@ -120,6 +121,7 @@ impl Component for TaskItem {
     }
 
     fn view(&self) -> Html {
+
         if let Some(_) = self.fetch_action {
             // Return loading indicator
             return html!{
@@ -130,6 +132,8 @@ impl Component for TaskItem {
         }
 
         let task = &self.props.task;
+
+        ConsoleService::log(&format!("Done: {}", task.is_done));
 
         let is_done_class = if task.is_done {
            "completed"
