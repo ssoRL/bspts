@@ -174,8 +174,14 @@ impl Component for TaskItem {
                 <IconComponent<TaskIcon> icon={self.props.task.icon.clone()} classes="on-task-badge" />
                 <div class="description">
                     <div class="name">{&task.name}</div>
-                    <div class="info">{pts_desc}</div>
-                    <div class="sub-info">{do_by}</div>
+                    {if !task.is_done {
+                        html!{<>
+                            <div class="info">{pts_desc}</div>
+                            <div class="sub-info">{do_by}</div>
+                        </>}
+                    } else {
+                        html!{<></>}
+                    }}
                 </div>
                 <div class="buttons">
                     <div class={edit_class} onclick={click_edit}>{"Edit"}</div>

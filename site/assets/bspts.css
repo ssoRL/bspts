@@ -1,6 +1,7 @@
 :root {
     --dark-color: rgb(20,20,20);
-    --medium-dark--color: DarkSlateGray;
+    --medium-dark-color: DarkSlateGray;
+    --light-gray: LightGray;
     --light-color: AliceBlue;
     --action-button-color: Tomato;
     --dark-green: Green;
@@ -45,12 +46,12 @@ h1 {
 .badge-field-header .buffer {
     flex-grow: 1;
     height: 0;
-    border-top: 1px solid var(--medium-dark--color);
+    border-top: 1px solid var(--medium-dark-color);
 }
 
 .badge-field-header .title {
     font-size: var(--info-size);
-    color: var(--medium-dark--color);
+    color: var(--medium-dark-color);
     min-width: 20%;
     margin: 0 10px;
     text-align: center;
@@ -120,6 +121,20 @@ i.on-chooser {
 .badge .button {
     padding: 1rem 2rem;
     margin: 1rem;
+}
+
+/* Styles for completed badges */
+
+.badge.completed {
+    background-color: var(--light-gray);
+}
+
+.badge.completed i.on-task-badge {
+    font-size: 4rem;
+}
+
+.badge.completed .button {
+    background-color: var(--light-gray);
 }
 
 /* Generic styles */
@@ -238,6 +253,7 @@ i.on-chooser {
 }
 
 .form .cancel.button {
+    background-color: white;
     padding: 8px 18px;
     border: 2px solid var(--text-color);
 }
@@ -261,6 +277,12 @@ i.on-chooser {
     font-size: var(--header-size);
     margin: 10px;
     font-variant: small-caps;
+}
+
+.header .show-time {
+    color: var(--light-color);
+    font-size: var(--info-size);
+    margin: 10px;
 }
 
 .header .home-link {

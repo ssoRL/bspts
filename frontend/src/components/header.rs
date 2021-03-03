@@ -6,6 +6,7 @@ use crate::data::*;
 use data::user::User;
 use crate::app::Route;
 use yew_router::components::{RouterAnchor};
+use js_sys::Date;
 
 type Callbacks = Option<StoreListener<Option<User>>>;
 
@@ -89,6 +90,7 @@ impl Component for Header {
             Route::RewardsPage => ("", "selected"),
             _ => ("", ""),
         };
+        let now = Date::new_0();
         html! {
             <>
                 <div class="header">
@@ -99,6 +101,7 @@ impl Component for Header {
                         <span class="flex-buffer" />
                         <span class="bspts">{format!("BsPts: {}", self.state.bspts)}</span>
                         <span class="flex-buffer" />
+                        <span class="show-time">{format!("{}h{}", now.get_hours(), now.get_minutes())}</span>
                     </div>
                     <div class="line routes">
                         <RouterAnchor<Route> classes={tasks_class} route={Route::Tasks} >{"Tasks"}</RouterAnchor<Route>>

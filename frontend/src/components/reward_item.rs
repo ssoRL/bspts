@@ -120,8 +120,7 @@ impl Component for RewardItem {
         let edit_class = format!("edit button {}-theme", self.props.reward.icon.get_color().to_string());
         let done_class = format!("done button {}-theme-inv", self.props.reward.icon.get_color().to_string());
 
-        html! {
-            <div class="covered-on-load">
+        html! {<>
             <div
                 class={badge_class}
                 title={&reward.description}
@@ -167,7 +166,6 @@ impl Component for RewardItem {
             } else {
                 html!{<></>}
             }}
-            </div>
-        }
+        </>}
     }
 }
