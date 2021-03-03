@@ -97,7 +97,7 @@ impl Component for Header {
                             <span class="fa fa-3x fa-home" />
                         </RouterAnchor<Route>>
                         <span class="flex-buffer" />
-                        <span class="bspts">{format!("BSPTS: {}", self.state.bspts)}</span>
+                        <span class="bspts">{format!("BsPts: {}", self.state.bspts)}</span>
                         <span class="flex-buffer" />
                     </div>
                     <div class="line routes">

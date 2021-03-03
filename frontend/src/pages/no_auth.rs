@@ -24,7 +24,8 @@ impl Component for AuthOptions {
 
     fn view(&self) -> Html {
         html! {
-            <div>
+            <div class="no-auth-page">
+                <span class="title">{"BsPts"}</span>
                 <Anchor route=app::Route::SignUpPage classes="button">
                     {"Sign Up"}
                 </Anchor>

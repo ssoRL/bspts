@@ -171,18 +171,18 @@ impl Component for TaskItem {
                 class={badge_class}
                 title={&task.description}
             >
-                <div class="name">{&task.name}</div>
-                <div class="info">{pts_desc}</div>
-                <div class="sub-info">{do_by}</div>
-                // <i class="thumbnail fas fa-coffee"></i>
                 <IconComponent<TaskIcon> icon={self.props.task.icon.clone()} classes="on-task-badge" />
-                <div class="badge-line">
-                    <span class={edit_class} onclick={click_edit}>{"Edit"}</span>
-                    <span class="flex-buffer"></span>
+                <div class="description">
+                    <div class="name">{&task.name}</div>
+                    <div class="info">{pts_desc}</div>
+                    <div class="sub-info">{do_by}</div>
+                </div>
+                <div class="buttons">
+                    <div class={edit_class} onclick={click_edit}>{"Edit"}</div>
                     {if self.props.task.is_done {
                         html!{<></>}
                     } else {
-                        html!{<span class={done_class} onclick={click_done}>{"Done"}</span>}
+                        html!{<div class={done_class} onclick={click_done}>{"Done"}</div>}
                     }}
                     
                 </div>

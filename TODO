@@ -23,6 +23,7 @@ new task create should go thru the store, it's a bit sketchy atm
 input validation
 use text input and pattern for bspts input
 styling for task edit
+PWA!
 
 WRITE-UPS:
 Yew routing bullshit

@@ -344,10 +344,12 @@ impl Component for TaskEditor {
         } else {
             let on_destroy = self.link.callback(|_| {Msg::DeleteTask});
 
-            html! { <div class="badge-line">
-                <span class="flex-buffer" />
-                <a class="delete" onclick={on_destroy}>{"Delete this task"}</a>
-            </div>}
+            html! {
+                <div class="badge-line">
+                    <span class="flex-buffer" />
+                    <a class="delete" onclick={on_destroy}>{"Delete this task"}</a>
+                </div>
+            }
         };
 
         html! {

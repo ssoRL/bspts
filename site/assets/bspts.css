@@ -1,7 +1,7 @@
 :root {
     --dark-color: rgb(20,20,20);
     --medium-dark--color: DarkSlateGray;
-    --light-color: LightGray;
+    --light-color: AliceBlue;
     --action-button-color: Tomato;
     --dark-green: Green;
     --light-green: PaleGreen;
@@ -56,26 +56,30 @@ h1 {
     text-align: center;
 }
 
-/* The field of square shaped badges that overflow into the next line */
+/* A field where the badges (item components) are shown */
 .badge-field {
     width: 80%;
     min-width: 500px;
     margin: auto;
     display: flex;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: center;
 }
 
 .badge-field .badge {
-    position: relative;
-    width: 210px;
-    height: 210px;
+    width: 100%;
     margin: 20px;
     transition: all 200ms;
     text-decoration: none;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     font-family: sans-serif;
+}
+
+.badge .description {
+    flex-grow: 1;
+    margin-left: 2rem;
 }
 
 .badge-line {
@@ -87,14 +91,9 @@ h1 {
 }
 
 /* The styling of elements on the badge */
-i.on-reward-badge {
-    font-size: 90px;
-    margin: 5px;
-}
-
-i.on-task-badge {
-    font-size: 80px;
-    margin: 5px;
+.badge i {
+    font-size: 7rem;
+    margin: 1rem;
 }
 
 i.on-chooser {
@@ -119,7 +118,8 @@ i.on-chooser {
 }
 
 .badge .button {
-    padding: 8px 18px;
+    padding: 1rem 2rem;
+    margin: 1rem;
 }
 
 /* Generic styles */
@@ -130,6 +130,12 @@ i.on-chooser {
 .button {
     cursor: pointer;
     font-variant: small-caps;
+    font-size: 1rem;
+    box-shadow: 1px 1px 5px gray;
+}
+
+.button:hover {
+    box-shadow: 1px 1px 5px 5px gray;
 }
 
 .covered-on-load {
@@ -165,12 +171,9 @@ i.on-chooser {
 
 /* Styling for the top button component */
 .top.button {
-    font-size: var(--sub-header-size);
-    font-family: sans-serif;
     text-align: center;
-    width: 30%;
     max-width: 300px;
-    padding: 10px 20px;
+    padding: 1rem 2rem;
     margin: 25px auto;
     background-color: var(--action-button-color);
     color: var(--light-color);
@@ -257,6 +260,7 @@ i.on-chooser {
 .header .bspts {
     font-size: var(--header-size);
     margin: 10px;
+    font-variant: small-caps;
 }
 
 .header .home-link {
@@ -281,6 +285,36 @@ i.on-chooser {
 .form .delete:hover {
     color: darkred;
 }
+
+/* Styles for the sign in/sign up page */
+.no-auth-page {
+   display: flex; 
+   flex-direction: column;
+   margin: 2rem auto;
+   width: max-content;
+   background-color: white;
+   box-shadow: 1px 1px 5px gray;
+   padding: 2rem 5rem;
+}
+
+.no-auth-page .title {
+    font-size: 5rem;
+    font-variant: small-caps;
+ }
+
+.no-auth-page .button {
+    font-size: 3rem;
+    padding: 1rem 2rem;
+    margin: 1rem;
+    background-color: var(--action-button-color);
+    color: var(--light-color);
+    text-decoration: none;
+ }
+
+ .no-auth-page input {
+     margin: 1rem;
+     font-size: 3rem;
+ }
 
 /* Styling for the color selectors */
 .color-selected {

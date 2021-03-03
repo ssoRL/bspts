@@ -258,7 +258,7 @@ impl Component for TasksPage {
                     class="top button"
                     onclick={self.link.callback(|_| {Msg::OpenTaskCreationComponent})}
                 >
-                    {"Add New Task"}
+                    {"New Task"}
                 </div>
             }
         };

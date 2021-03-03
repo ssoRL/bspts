@@ -110,22 +110,16 @@ impl Component for SignIn {
 
         let edit_uname = self.link.callback(|input: InputData| {Msg::UpdateUname(input.value)});
         let edit_pw = self.link.callback(|input: InputData| {Msg::UpdatePassword(input.value)});
-        let on_login = self.link.callback(|_| {Msg::LoginUser});
+        let on_sign_in = self.link.callback(|_| {Msg::LoginUser});
 
         html! {
-            <div class="form">
+            <div class="form no-auth-page">
                 {error_message}
-                <div>
-                    <span class="text">{"User Name: "}</span>
-                    <input class="input" type="text" oninput={edit_uname} />
-                </div>
-                <div>
-                    <span class="text">{"Password "}</span>
-                    <input class="input" type="password" oninput={edit_pw} />
-                </div>
+                <input placeholder="User Name" class="input" type="text" oninput={edit_uname} />
+                <input placeholder="Password" class="input" type="password" oninput={edit_pw} />
                 <div class="button-line">
                     <span class="flex-buffer"></span>
-                    <span class="save button" onclick={on_login}>{"Sign In"}</span>
+                    <span class="save button" onclick={on_sign_in}>{"Sign In"}</span>
                 </div>
             </div>
         }
