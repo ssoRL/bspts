@@ -47,6 +47,15 @@ async fn complete_task(
     ses: &actix_web::http::Cookie<'static>,
     task: &Task,
 ) -> Result<Task, StatusCode> {
+    complete_task_in_days(pool, ses, task, 0).await
+}
+
+async fn complete_task_in_days(
+    pool: &PgPool,
+    ses: &actix_web::http::Cookie<'static>,
+    task: &Task,
+    days_in_future: u32,
+) -> Result<Task, StatusCode> {
     println!("Completing task {}", task.id);
     let mut app = make_service(|c| {
         c.service(route::task::complete);
@@ -55,6 +64,9 @@ async fn complete_task(
     let complete_req = test::TestRequest::with_header("content-type", "text/plain")
         .uri(format!("/task/complete/{id}", id = task.id).as_str())
         .method(Method::POST)
+        .header("year", "2021")
+        .header("month", "1")
+        .header("day", (1 + days_in_future).to_string())
         .cookie(ses.clone())
         .to_request();
     let complete_resp = test::call_service(&mut app, complete_req).await;
@@ -62,18 +74,7 @@ async fn complete_task(
     if !complete_resp.status().is_success() {
         return Err(complete_resp.status());
     }
-    println!("Get the task and ensure it's now marked completed");
-    let get_req = test::TestRequest::with_header("content-type", "text/plain")
-        .uri(format!("/task/{}", task.id).as_str())
-        .method(Method::GET)
-        .cookie(ses.clone())
-        .to_request();
-    let get_resp = test::call_service(&mut app, get_req).await;
-    println!("{:#?}", get_resp);
-    if !get_resp.status().is_success() {
-        return Err(get_resp.status());
-    }
-    let task: Task = test::read_body_json(get_resp).await;
+    let task: Task = test::read_body_json(complete_resp).await;
     Ok(task)
 }
 
@@ -239,7 +240,11 @@ async fn test_complete_task() {
     }
 
     match complete_task(&pool, &session_cookie, &saved_task).await {
-        Err(code) if code == StatusCode::BAD_REQUEST => {}
+        Err(code) => {
+            if code != StatusCode::BAD_REQUEST {
+                panic!("Trying to complete twice should trigger BAD REQUEST error not {}", code)
+            }
+        }
         _ => panic!("Should not be allowed to complete the same task twice")
     }
 
@@ -271,6 +276,21 @@ async fn test_complete_task() {
         }
     }
     assert!(in_list, format!("Can't find task with id: {}", saved_task.id));
+}
+
+#[actix_rt::test]
+async fn test_point_loss() {
+    println!("Setup point loss test");
+    let user = make_user("point_loss");
+    let pool = get_connection_pool();
+    let session_cookie = login(&user, &pool).await.expect("Failed to login");
+    
+    let saved_task = create_new_task(&pool, &session_cookie, "TaskName", 1).await;
+    assert!(!saved_task.is_done, "The task should be marked as not-done for now");
+
+    println!("Try to complete the task after it should be completed");
+    let past_due_completion = complete_task_in_days(&pool, &session_cookie, &saved_task, STANDARD_TASK_FREQUENCY + 1).await;
+    assert!(!past_due_completion.is_ok(), "Task was successfully marked complete after due by date")
 }
 
 #[actix_rt::test]

@@ -49,6 +49,7 @@ pub struct QTask {
     pub by_when: i32,
     pub user_id: i32,
     pub icon: String,
+    pub pts_lost: i32,
 }
 
 #[derive(Insertable)]

@@ -115,7 +115,7 @@ pub fn update_task(task_id: i32, task_edits: NewTask, callback: FetchCallback<Ta
 }
 
 /// Mark a task as completed
-pub fn complete_task(task_id: i32, callback: FetchCallback<i32>) -> FetchTask {
+pub fn complete_task(task_id: i32, callback: FetchCallback<Task>) -> FetchTask {
         let post = post_with_head(&format!("/task/complete/{}", task_id))
             .body(Nothing)
             .unwrap();

@@ -76,6 +76,7 @@ fn query_task_to_task(qt: &QTask) -> Task {
         description: qt.description.clone(),
         user_id: qt.user_id,
         bspts: qt.bspts,
+        pts_lost: qt.pts_lost,
         is_done: qt.is_done,
         days_to_next_reset: get_days_to_next_reset(qt.next_reset),
         next_reset: qt.next_reset,
@@ -107,7 +108,8 @@ pub fn get_done_tasks(user: QUser, conn: &PgPooledConnection) -> Vec<Task> {
 }
 
 /// Checks all of the user's "done" tasks and moves them back to 
-/// "todo" if it's their time.
+/// "todo" if it's their time. Returns the list of tasks that were
+/// moved to "todo" by this action
 pub fn move_tasks_to_todo_if_ready(user: QUser, conn: &PgPooledConnection, today: NaiveDate) -> Vec<Task>  {
     let mut q_tasks = get_q_tasks(user, true, conn);
     q_tasks.iter_mut().filter_map(|q_task| {
@@ -231,15 +233,19 @@ pub fn delete_task(task_id: i32, conn: &PgPooledConnection) -> Result<()> {
 }
 
 /// marks the task as complete and returns the number of points that the user has after completion
-pub fn complete_task(task_id: i32, conn: &PgPooledConnection) -> Result<i32> {
+pub fn complete_task(task_id: i32, conn: &PgPooledConnection, today: NaiveDate) -> Result<Task> {
     println!("Completing task {}", task_id);
     let mut q_task = get_q_task(task_id, conn)?;
     if q_task.is_done {
         return Err(bad_request(format!("Task {} was already completed", q_task.id)));
     }
+    if q_task.next_reset < today {
+        return Err(bad_request(format!("Task {} is past-due and cannot be completed", q_task.id)));
+    }
     atomically(conn, || {
         q_task.is_done = true;
         let updated_q_task = update_q_task(&q_task, conn)?;
-        user::update_bspts(updated_q_task.user_id, updated_q_task.bspts, conn)
+        user::update_bspts(updated_q_task.user_id, updated_q_task.bspts, conn)?;
+        Ok(query_task_to_task(&updated_q_task))
     })
 }

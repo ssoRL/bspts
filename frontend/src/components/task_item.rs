@@ -29,7 +29,7 @@ pub struct State {
 pub enum Msg {
     EditTask,
     CompleteTask,
-    TaskIsCompleted(i32),
+    TaskIsCompleted(Task),
     Update(Box<Task>),
     CancelEdit,
     DestroySelf,
@@ -53,10 +53,10 @@ impl Component for TaskItem {
                 true
             }
             Msg::CompleteTask => {
-                let callback = self.link.callback(|response: FetchResponse<i32>| {
+                let callback = self.link.callback(|response: FetchResponse<Task>| {
                     match response.into_parts() {
-                        (_, Json(Ok(pts))) => {
-                            Msg::TaskIsCompleted(pts)
+                        (_, Json(Ok(completed_task))) => {
+                            Msg::TaskIsCompleted(completed_task)
                         }
                         (_, _) => {
                             // TODO: Real error handling
@@ -69,26 +69,24 @@ impl Component for TaskItem {
                 self.fetch_action = Some(fetch);
                 true
             }
-            Msg::TaskIsCompleted(total_points) => {
-                ConsoleService::log(&format!("pts so far: {}", total_points));
-                self.props.store.session_user.update(|user_opt| {
-                    if let Some(user) = user_opt {
-                        user.bspts = total_points;
-                        true
-                    } else {
-                        false
-                    }
-                });
-                let mut task = self.props.task.clone();
-                let id = task.id;
-                task.is_done = true;
+            Msg::TaskIsCompleted(completed_task) => {
                 self.fetch_action = None;
+                // TODO: fetch points on change
+                // self.props.store.session_user.update(|user_opt| {
+                //     if let Some(user) = user_opt {
+                //         user.bspts = total_points;
+                //         true
+                //     } else {
+                //         false
+                //     }
+                // });
+                let id = completed_task.id;
                 let remove_task = move |tasks: &mut TaskList| {
                     tasks.remove(id).is_some()
                 };
                 if self.props.store.todo_tasks.update(remove_task) {
                     self.props.store.done_tasks.update(move |tasks: &mut TaskList| {
-                        tasks.push(task);
+                        tasks.push(Box::new(completed_task));
                         true
                     });
                     true

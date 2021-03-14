@@ -73,12 +73,14 @@ async fn update(
 #[post("/task/complete/{id}")]
 async fn complete(
     web::Path(id): web::Path<i32>,
+    req: HttpRequest, 
     data: Data<PgPool>,
     ses: Session
-) -> Rsp<i32> {
+) -> Rsp<Task> {
     println!("In complete task route");
     with_auth(ses, data, |_, conn| {
-        let updated_pts = complete_task(id, &conn)?;
+        let today = get_date(req);
+        let updated_pts = complete_task(id, &conn, today)?;
         Ok(Json(updated_pts))
     })
 }
