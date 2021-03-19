@@ -14,17 +14,19 @@ use crate::route::*;
 use crate::error::*;
 
 #[get("/task/todo")]
-async fn get_todo(data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
+async fn get_todo(req: HttpRequest, data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
     with_auth(ses, data, |user, conn| {
-        let tasks = get_todo_tasks(user, &conn);
+        let today = get_date(req);
+        let tasks = get_todo_tasks(user, &conn, today);
         Ok(Json(tasks))
     })
 }
 
 #[get("/task/done")]
-async fn get_done(data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
+async fn get_done(req: HttpRequest, data: Data<PgPool>, ses: Session) -> Rsp<Vec<Task>> {
     with_auth(ses, data, |user, conn| {
-        let tasks_lists = get_done_tasks(user, &conn);
+        let today = get_date(req);
+        let tasks_lists = get_done_tasks(user, &conn, today);
         Ok(Json(tasks_lists))
     })
 }
@@ -39,9 +41,10 @@ async fn undo(req: HttpRequest, data: Data<PgPool>, ses: Session) -> Rsp<Vec<Tas
 }
 
 #[get("/task/{id}")]
-async fn get_by_id(web::Path(id): web::Path<i32>, data: Data<PgPool>, ses: Session) -> Rsp<Task> {
+async fn get_by_id(web::Path(id): web::Path<i32>, req: HttpRequest, data: Data<PgPool>, ses: Session) -> Rsp<Task> {
     with_auth(ses, data, |_, conn| {
-        let task = get_task(id, &conn)?;
+        let today = get_date(req);
+        let task = get_task(id, &conn, today)?;
         Ok(Json(task))
     })
 }
@@ -59,13 +62,15 @@ async fn commit_new(req: HttpRequest, payload: Json<NewTask>, data: Data<PgPool>
 #[put("/task/{id}")]
 async fn update(
     web::Path(id): web::Path<i32>,
+    req: HttpRequest,
     payload: Json<NewTask>,
     data: Data<PgPool>,
     ses: Session
 ) -> Rsp<Task> {
     with_auth(ses, data, |_, conn| {
         let Json(task_updates) = payload;
-        let updated_task = update_task(id, task_updates, &conn)?;
+        let today = get_date(req);
+        let updated_task = update_task(id, task_updates, &conn, today)?;
         Ok(Json(updated_task))
     })
 }

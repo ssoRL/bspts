@@ -22,7 +22,6 @@ pub async fn make_service<F>(
     pool: &PgPool
 ) -> impl dev::Service<Request = actix_http::Request, Response = dev::ServiceResponse<dev::Body>, Error = actix_web::Error>
 where
-    // F: dev::HttpServiceFactory + 'static
     F: FnOnce(&mut ServiceConfig)
 {
     // Creates the service pool with both the sign in route to auth with

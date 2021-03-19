@@ -10,11 +10,11 @@ yew store???
 reformat use (just fmt in general??)
 
 FEATURES:
-style done task items
 make routing work on non-hashtag routes
 lose an increasing number of points as tasks are missed
 styling for no auth page
 signing out I guess
+mark when rewards have been taken that day
 pass app into the test helpers in a box
 An actually useful homepage
 stop loading things over and over if they're already loaded in

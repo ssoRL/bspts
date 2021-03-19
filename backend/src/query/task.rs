@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 use data::task::*;
-use chrono::{NaiveDate, Local, Duration, Datelike};
+use chrono::{NaiveDate, Duration, Datelike};
 use crate::PgPooledConnection;
 use crate::models::*;
 use crate::error::*;
@@ -46,8 +46,7 @@ fn calc_next_reset(frequency: &TaskInterval, today: NaiveDate) -> NaiveDate {
     }
 }
 
-fn get_days_to_next_reset(next_reset: NaiveDate) -> i64 {
-    let today = Local::today().naive_local();
+fn get_days_to_next_reset(next_reset: NaiveDate, today: NaiveDate) -> i64 {
     let duration = next_reset - today;
     duration.num_days()
 }
@@ -69,19 +68,21 @@ fn get_frequency_from_q_task(qt: &QTask) -> TaskInterval {
     }
 }
 
-fn query_task_to_task(qt: &QTask) -> Task {
-    Task {
-        id: qt.id,
-        name: qt.name.clone(),
-        description: qt.description.clone(),
-        user_id: qt.user_id,
-        bspts: qt.bspts,
-        pts_lost: qt.pts_lost,
-        is_done: qt.is_done,
-        days_to_next_reset: get_days_to_next_reset(qt.next_reset),
-        next_reset: qt.next_reset,
-        frequency: get_frequency_from_q_task(qt),
-        icon: qt.icon.clone().into(),
+fn query_task_to_task(today: NaiveDate) -> impl Fn(&QTask) -> Task {
+    move |qt: &QTask| {
+        Task {
+            id: qt.id,
+            name: qt.name.clone(),
+            description: qt.description.clone(),
+            user_id: qt.user_id,
+            bspts: qt.bspts,
+            pts_lost: qt.pts_lost,
+            is_done: qt.is_done,
+            days_to_next_reset: get_days_to_next_reset(qt.next_reset, today),
+            next_reset: qt.next_reset,
+            frequency: get_frequency_from_q_task(qt),
+            icon: qt.icon.clone().into(),
+        }
     }
 }
 
@@ -95,16 +96,16 @@ fn get_q_tasks(user: QUser, done_tasks: bool, conn: &PgPooledConnection) -> Vec<
 
 /// Get all of the tasks for the user that are not yet complete
 /// * user: The user to get the tasks for
-pub fn get_todo_tasks(user: QUser, conn: &PgPooledConnection) -> Vec<Task> {
+pub fn get_todo_tasks(user: QUser, conn: &PgPooledConnection, today: NaiveDate) -> Vec<Task> {
     let q_tasks = get_q_tasks(user, false, conn);
-    q_tasks.iter().map(query_task_to_task).collect()
+    q_tasks.iter().map(query_task_to_task(today)).collect()
 }
 
 /// Get all of the tasks for the user that are completed
 /// * user: The user to get the tasks for
-pub fn get_done_tasks(user: QUser, conn: &PgPooledConnection) -> Vec<Task> {
+pub fn get_done_tasks(user: QUser, conn: &PgPooledConnection, today: NaiveDate) -> Vec<Task> {
     let q_tasks = get_q_tasks(user, true, conn);
-    q_tasks.iter().map(query_task_to_task).collect()
+    q_tasks.iter().map(query_task_to_task(today)).collect()
 }
 
 /// Checks all of the user's "done" tasks and moves them back to 
@@ -122,7 +123,7 @@ pub fn move_tasks_to_todo_if_ready(user: QUser, conn: &PgPooledConnection, today
         q_task.next_reset = new_reset;
         q_task.is_done = false;
         match update_q_task(q_task, conn) {
-            Ok(updated_q_task) => Some(query_task_to_task(&updated_q_task)),
+            Ok(updated_q_task) => Some(query_task_to_task(today)(&updated_q_task)),
             _ => None,
         }
         
@@ -143,9 +144,9 @@ fn get_q_task(task_id: i32, conn: &PgPooledConnection) -> Result<QTask> {
     }
 }
 
-pub fn get_task(task_id: i32, conn: &PgPooledConnection) -> Result<Task> {
+pub fn get_task(task_id: i32, conn: &PgPooledConnection, today: NaiveDate) -> Result<Task> {
     let q_task = get_q_task(task_id, conn)?;
-    Ok(query_task_to_task(&q_task))
+    Ok(query_task_to_task(today)(&q_task))
 }
 
 /// Add a new task to the database
@@ -181,7 +182,7 @@ pub fn commit_new_task(new_task: NewTask, user: QUser, conn: PgPooledConnection,
         .get_result(&conn)
         .expect("Error saving new task");
 
-    query_task_to_task(&committed_task)
+    query_task_to_task(today)(&committed_task)
 }
 
 /// Updates the task with task_id to the value q_task and returns the updated task
@@ -195,7 +196,7 @@ fn update_q_task(q_task: &QTask, conn: &PgPooledConnection) -> Result<QTask> {
 }
 
 /// Add a new task to the database
-pub fn update_task(task_id: i32, new_task: NewTask, conn: &PgPooledConnection) -> Result<Task> {
+pub fn update_task(task_id: i32, new_task: NewTask, conn: &PgPooledConnection, today: NaiveDate) -> Result<Task> {
     let mut q_task = get_q_task(task_id, &conn)?;
 
     let (time_unit, every, by_when) = match new_task.frequency {
@@ -220,7 +221,7 @@ pub fn update_task(task_id: i32, new_task: NewTask, conn: &PgPooledConnection) -
 
     let committed_task = update_q_task(&q_task, conn)?;
 
-    Ok(query_task_to_task(&committed_task))
+    Ok(query_task_to_task(today)(&committed_task))
 }
 
 pub fn delete_task(task_id: i32, conn: &PgPooledConnection) -> Result<()> {
@@ -246,6 +247,6 @@ pub fn complete_task(task_id: i32, conn: &PgPooledConnection, today: NaiveDate) 
         q_task.is_done = true;
         let updated_q_task = update_q_task(&q_task, conn)?;
         user::update_bspts(updated_q_task.user_id, updated_q_task.bspts, conn)?;
-        Ok(query_task_to_task(&updated_q_task))
+        Ok(query_task_to_task(today)(&updated_q_task))
     })
 }
